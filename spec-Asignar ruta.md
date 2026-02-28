@@ -55,26 +55,14 @@ Yo como sistema de asignacion de rutas organizo y verfica que la ruta cumpla los
   ACTION REQUIRED: The content in this section represents placeholders.
   Fill them out with the right edge cases.
 -->
-
-Se averiaron los vehículos repuesta: se reorganiza la ruta
-se destruye un paquete en medio del envió: se paga el 100% del pedido
-falla del vehiculo en medio de la ruta: Se envia un vehiculo para recoger los pedidos y llevarlos al destino
-
+* ¿Que pasa si se se pierde un pedido o se daña en el proceso de transporte?
+* ¿Que pasa si falla un vehiculo mientras esta en ruta
 ## Requirements *(mandatory)*
 
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.
   Fill them out with the right functional requirements.
 -->
-4. **Scenario**: Crear una nueva ruta
-   - **Given** Vehiculo disponible y con capacidad para la ruta solicitada
-   - **When** Cuando se solicita una nueva ruta
-   - **Then** Se crea una nueva ruta 
-
-   5. **Scenario**: Crear una nueva ruta sin disponibilidad de vehiculos
-   - **Given** Vehiculo no disponible 
-   - **When** Cuando se solicita una nueva ruta
-   - **Then** Se crea una nueva ruta para cuado haya disponibilidad de vehiculos
 ### Functional Requirements
 
 - **FR-001**: System MUST [Crear nueva ruta, implica verificar la disponibilidad de vehiculos, verificar que la capacidad del vehiculo elegido sea la adecuada para el peso de pedido]
