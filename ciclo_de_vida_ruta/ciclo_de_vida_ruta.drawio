@@ -1,0 +1,64 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.6.1">
+  <diagram name="Página-1" id="xGCdlXdv_Vt56cwps1mT">
+    <mxGraphModel dx="1426" dy="777" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-5" edge="1" parent="1" source="FASMVMrEQ9hkkbKGwRAe-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.3;entryY=0.063;entryDx=0;entryDy=0;entryPerimeter=0;" target="FASMVMrEQ9hkkbKGwRAe-2" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="230" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-6" connectable="0" parent="FASMVMrEQ9hkkbKGwRAe-5" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="asignar pedido no 1" vertex="1">
+          <mxGeometry relative="1" x="-0.0389" y="-5" as="geometry">
+            <mxPoint x="-22" y="20" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="creacion de ruta&amp;nbsp;" vertex="1">
+          <mxGeometry height="80" width="120" x="170" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="ruta abierta" vertex="1">
+          <mxGeometry height="80" width="120" x="280" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-11" edge="1" parent="1" source="FASMVMrEQ9hkkbKGwRAe-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0;entryDx=0;entryDy=0;" target="FASMVMrEQ9hkkbKGwRAe-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-12" connectable="0" parent="FASMVMrEQ9hkkbKGwRAe-11" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="el transportista inicia la ruta&amp;nbsp;" vertex="1">
+          <mxGeometry relative="1" x="0.0217" y="-3" as="geometry">
+            <mxPoint x="45" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-7" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="cierre de ruta" vertex="1">
+          <mxGeometry height="80" width="120" x="390" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-8" edge="1" parent="1" source="FASMVMrEQ9hkkbKGwRAe-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0.075;entryDx=0;entryDy=0;entryPerimeter=0;" target="FASMVMrEQ9hkkbKGwRAe-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-9" connectable="0" parent="FASMVMrEQ9hkkbKGwRAe-8" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="se llega capacidada 95% de peso" vertex="1">
+          <mxGeometry relative="1" x="-0.0494" y="2" as="geometry">
+            <mxPoint x="-72" y="17" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FASMVMrEQ9hkkbKGwRAe-10" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="en ruta" vertex="1">
+          <mxGeometry height="80" width="120" x="530" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="_Cq7QdhuMZ2W5bkMuKvx-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="ruta finalizada" vertex="1">
+          <mxGeometry height="80" width="120" x="650" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="_Cq7QdhuMZ2W5bkMuKvx-2" edge="1" parent="1" source="FASMVMrEQ9hkkbKGwRAe-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="590" y="660" />
+            </Array>
+            <mxPoint x="650" y="660" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_Cq7QdhuMZ2W5bkMuKvx-4" connectable="0" parent="_Cq7QdhuMZ2W5bkMuKvx-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="se realiza la entrega de todos los pedidos&amp;nbsp;" vertex="1">
+          <mxGeometry relative="1" x="-0.1333" y="4" as="geometry">
+            <mxPoint x="-114" y="-15" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
