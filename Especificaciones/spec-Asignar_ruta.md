@@ -10,8 +10,6 @@ Como sistema interno del módulo de Logística, debo asignar cada pedido a una r
 
 **Independent Test**: Puede probarse de forma independiente cuando se ingresa un pedido con pesoTotal y se verifica que: (1) Se asigna a una ruta existente si tiene capacidad, (2) Se crea una nueva ruta si no hay disponibilidad, (3) Se cierra la ruta al alcanzar 95% de capacidad.
 
-**Communication Pattern**: Interno (Síncrono). Proceso interno del módulo que ocurre cuando se recibe una solicitud de ruta del Módulo Financiero.
-
 **Acceptance Scenarios**:
 
 1. **Scenario**: Asignar pedido a ruta existente con capacidad disponible
@@ -62,7 +60,9 @@ Como sistema interno del módulo de Logística, debo asignar cada pedido a una r
 
 ### Key Entities
 
-- **[Ruta]**: Conjunto de paradas y pedidos asignados a un vehículo. Atributos: idRuta, lista de pedidos, idVehículo, capacidad_total, peso_acumulado, estado (disponible/cerrada), fecha_despacho.
+- **[Ruta]**: Conjunto de paradas y pedidos asignados a un vehículo. Atributos: idRuta, lista de paradas, idVehículo, capacidad_total, peso_acumulado, estado (disponible/cerrada), fecha_despacho.
+
+- **[Parada]**: Punto de entrega dentro de una ruta. Atributos: idParada, idRuta (FK), idPedido (FK), secuencia, dirección_entrega, estado (pendiente/entregado/rechazado), fecha_entrega.
 
 - **[Vehículo]**: Medio de transporte. Atributos: idVehículo, tipo, capacidad_carga, estado, idTransportista.
 
