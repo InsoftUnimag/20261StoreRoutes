@@ -43,7 +43,7 @@ docs/specs/gestion-flota/
   - El controller es responsable de traducir DTOs → domain objects antes de llamar al use case, y domain objects → DTOs al responder.
 
 ```text
-src/main/java/com/logistica/flota/
+src/main/java/co/edu/unimagdalena/storelogistic/flota/
 ├── domain/
 │   ├── models/
 │   │   ├── Vehiculo.java
@@ -56,6 +56,7 @@ src/main/java/com/logistica/flota/
 │   ├── ports/
 │   │   ├── in/
 │   │   │   ├── ListarVehiculosUseCase.java
+│   │   │   ├── ObtenerVehiculoUseCase.java
 │   │   │   ├── RegistrarVehiculoUseCase.java
 │   │   │   └── CambiarEstadoVehiculoUseCase.java
 │   │   └── out/
@@ -69,6 +70,7 @@ src/main/java/com/logistica/flota/
 ├── application/
 │   └── services/
 │       ├── ListarVehiculosService.java
+│       ├── ObtenerVehiculoService.java
 │       ├── RegistrarVehiculoService.java
 │       └── CambiarEstadoVehiculoService.java
 │
@@ -90,13 +92,15 @@ src/main/java/com/logistica/flota/
     │   │   └── FlotaController.java
     │   └── dto/
     │       ├── VehiculoDTO.java
+    │       ├── VehiculoDetailResponse.java
     │       ├── RegistrarVehiculoRequest.java
     │       ├── RegistrarVehiculoResponse.java
     │       ├── CambiarEstadoRequest.java
     │       ├── FiltroVehiculoRequest.java
     │       └── ListaVehiculosResponse.java
     ├── mapper/
-    │   └── VehiculoMapper.java        # Implementación MapStruct: domain ↔ DTO ↔ JpaEntity
+    │   ├── VehiculoMapper.java        # MapStruct abstract class: Vehiculo ↔ DTOs (usa CategoriaRepository)
+    │   └── CategoriaMapper.java       # MapStruct abstract class: CategoriaJpaEntity ↔ Categoria (domain)
     └── exception/
         ├── GlobalExceptionHandler.java
         └── ErrorResponse.java
@@ -165,11 +169,11 @@ src/test/java/com/logistica/flota/
 - [ ] T012 Crear `Categoria.java` — domain model con: `idCategoria`, `tipo (TipoCategoria)`, `capacidadMaxima (CapacidadCarga)`
 - [ ] T013 Crear `Vehiculo.java` — domain model con: `idVehiculo`, `idCategoria`, `capacidadCarga`, `estado`, `idTransportista`, `pesoActual`, `createdAt`; método `porcentajeOcupacion()` y `cambiarEstado(EstadoVehiculo nuevo)`
 - [ ] T014 Crear `TransicionEstadoInvalidaException.java`, `VehiculoNotFoundException.java`, `FlotaException.java`
-- [ ] T015 Crear ports de entrada en `domain/ports/in/`: `ListarVehiculosUseCase`, `RegistrarVehiculoUseCase`, `CambiarEstadoVehiculoUseCase`. Las firmas de los use cases reciben y retornan domain objects exclusivamente (sin DTOs).
+- [ ] T015 Crear ports de entrada en `domain/ports/in/`: `ListarVehiculosUseCase`, `ObtenerVehiculoUseCase`, `RegistrarVehiculoUseCase`, `CambiarEstadoVehiculoUseCase`. Las firmas de los use cases reciben y retornan domain objects exclusivamente (sin DTOs).
 - [ ] T016 Crear ports de salida en `domain/ports/out/`: `VehiculoRepository` con `findWithFilters(FiltroVehiculo filtro)`, `findById`, `save`; y `CategoriaRepository` con `findByTipo`, `findById`.
 - [ ] T017 Crear entidades JPA: `VehiculoJpaEntity.java`, `CategoriaJpaEntity.java` con mappings correctos a PostgreSQL
 - [ ] T018 Crear `VehiculoSpringRepository.java` y `CategoriaSpringRepository.java` (interfaces JpaRepository)
-- [ ] T019 Crear `VehiculoMapper.java` (MapStruct) en `infrastructure/mapper/` — conversión entre domain models, DTOs y entidades JPA. Esta es la única clase con responsabilidad de mapeo; no existe interfaz de mapper en application.
+- [ ] T019 Crear `VehiculoMapper.java` y `CategoriaMapper.java` en `infrastructure/mapper/` como Spring `@Component` — conversión entre domain models, DTOs y entidades JPA. `VehiculoMapper` delega en `CategoriaRepository` para resolver el tipo de categoría por id.
 - [ ] T020 Crear `GlobalExceptionHandler.java` con manejo base: `TransicionEstadoInvalidaException` → HTTP 409, `VehiculoNotFoundException` → HTTP 404, `@Valid` violations → HTTP 400
 - [ ] T021 Crear `PostgreSQLContainer.java` — configuración TestContainers reutilizable para tests de integración
 - [ ] T022 Crear fixtures base: `VehiculoFixture.java`, `CategoriaFixture.java` con datos de prueba estándar
@@ -201,11 +205,10 @@ src/test/java/com/logistica/flota/
 - [ ] T030 [SC1] Implementar `ListarVehiculosService.java` implementando `ListarVehiculosUseCase`:
   - Recibe `FiltroVehiculo` (domain object), delega a `VehiculoRepository.findWithFilters`
   - Retorna `List<Vehiculo>` (domain objects); el mapeo a DTO es responsabilidad del controller
-- [ ] T031 [SC1] Crear `FlotaController.java` con `GET /api/flota/vehiculos`, parámetros query opcionales: `categoria`, `capacidadMin`, `capacidadMax`, `estado`.
-  - Mapea parámetros query → `FiltroVehiculo` usando `VehiculoMapper`
-  - Llama a `ListarVehiculosUseCase` con el `FiltroVehiculo`
-  - Mapea `List<Vehiculo>` → `ListaVehiculosResponse` usando `VehiculoMapper`
-  - Retorna HTTP 200 + `ListaVehiculosResponse`
+- [ ] T031 [SC1] Crear `FlotaController.java` con los siguientes endpoints:
+  - `GET /vehiculos` — parámetros query opcionales: `categoria`, `capacidadMin`, `capacidadMax`, `estado`. Mapea a `FiltroVehiculo` y retorna `ListaVehiculosResponse` (HTTP 200).
+  - `GET /vehiculos/{idVehiculo}` — obtiene el detalle de un vehículo por id. Llama a `ObtenerVehiculoUseCase` y retorna `VehiculoDetailResponse` (HTTP 200) o HTTP 404 si no existe.
+  Implementar `ObtenerVehiculoService.java` implementando `ObtenerVehiculoUseCase`: busca por id usando `VehiculoRepository.findById`, lanza `VehiculoNotFoundException` si no existe.
 - [ ] T032 [SC1] Crear `FiltroVehiculoRequest.java` con validaciones básicas (`capacidadMin` y `capacidadMax` deben ser positivos si presentes). Agregar método de conversión en `VehiculoMapper`: `FiltroVehiculoRequest → FiltroVehiculo`.
 - [ ] T033 [SC1] Crear `ListaVehiculosResponse.java` y `VehiculoDTO.java`. Agregar método de conversión en `VehiculoMapper`: `Vehiculo → VehiculoDTO` incluyendo `porcentajeOcupacion`.
 - [ ] T034 [SC1] Unit tests para `Vehiculo.porcentajeOcupacion()` — casos: 0%, 50%, 100%, pesoActual mayor que capacidad.
