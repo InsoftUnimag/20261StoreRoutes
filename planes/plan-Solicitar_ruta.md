@@ -1,25 +1,24 @@
-# Implementation Plan: Solicitar Ruta (Módulo 2: Logística)
+# Implementation Plan: Consultar Paradas de Rutas (Módulo 2: Logística)
 
-**Date**: April 6, 2026
-**Spec**: @/docs/specs/solicitar-ruta/spec.md
+**Date**: April 23, 2026
+**Spec**: @/docs/specs/consultar-paradas/spec.md
 
 ## Summary
 
-Implementar la recepción asíncrona de solicitudes de ruta desde el módulo de Inventario vía eventos, procesar la asignación o creación de rutas (reutilizando lógica de asignar-ruta), y publicar eventos de respuesta ("RutaAsignada" o "ErrorSolicitudRuta"). El sistema debe manejar concurrencia con SERIALIZABLE y asegurar integridad de capacidades. Stack: Java 21 + Spring Boot + Spring Cloud Stream + RabbitMQ + Spring Data JPA + PostgreSQL, como microservicio independiente del módulo de logística.
+Implementar la funcionalidad para que transportistas consulten la lista de paradas asignadas a sus rutas específicas, asegurando acceso restringido solo a rutas asignadas, con logging para auditoría y respuesta rápida. El sistema debe mostrar detalles como ID de parada, dirección y contacto del cliente, ordenados por secuencia. Stack: Java 21 + Spring Boot MVC + Spring Data JPA + PostgreSQL, como microservicio independiente del módulo de logística.
 
 ## Technical Context
 
 **Language/Version**: Java 21
-**Primary Dependencies**: Spring Boot 3.x, Spring Cloud Stream (RabbitMQ), Spring Web (para posibles fallbacks), Spring Data JPA, Hibernate, Flyway, MapStruct, Lombok, Gradle
+**Primary Dependencies**: Spring Boot 3.x, Spring Web (MVC), Spring Data JPA, Hibernate, Flyway, MapStruct, Lombok, Gradle
 **Storage**: PostgreSQL
-**Messaging**: RabbitMQ (para eventos asíncronos)
 **Testing**: JUnit 5, Mockito, AssertJ, TestContainers, ArchUnit, Jacoco
-**Target Platform**: Backend server (Event-Driven Microservice) — microservicio independiente de logística
+**Target Platform**: Backend server (REST API) — microservicio independiente de logística
 **Project Type**: Web Application (Backend) — stack bloqueante (no reactivo)
-**Architecture**: Hexagonal (Ports & Adapters), con event adapters
-**Performance Goals**: Procesar solicitud en <100ms (P95), publicar evento en <50ms
-**Constraints**: Procesamiento secuencial con `@Transactional(isolation = SERIALIZABLE)` para garantizar integridad; comunicación asíncrona vía queue
-**Scale/Scope**: Proceso interno; volumen estimado de cientos de solicitudes/día; sin requerimiento de escalado horizontal inmediato
+**Architecture**: Hexagonal (Ports & Adapters)
+**Performance Goals**: Consultar paradas en <3s para rutas con hasta 20 paradas (SC-001)
+**Constraints**: Acceso restringido por autenticación de transportista; logging no debe afectar rendimiento
+**Scale/Scope**: Proceso interno; consultas frecuentes por transportista; sin escalado horizontal inmediato
 
 ---
 
@@ -28,247 +27,209 @@ Implementar la recepción asíncrona de solicitudes de ruta desde el módulo de 
 ### Documentation (this feature)
 
 ```text
-docs/specs/solicitar-ruta/
+docs/specs/consultar-paradas/
 ├── plan.md      # This file
 └── spec.md      # Feature specification
 ```
 
 ### Source Code (repository root)
 
+**NOTA IMPORTANTE - Arquitectura Hexagonal Limpia:**
+- **domain/**: Contiene SOLO lógica de negocio pura, SIN dependencias de frameworks. Incluye models, value objects, ports (in/out) y exceptions.
+- **application/**: Contiene ÚNICAMENTE servicios que coordinan casos de uso. Sin DTOs, sin mappers, sin referencias a infraestructura. Los servicios reciben y retornan domain objects.
+- **infrastructure/**: Contiene TODOS los adaptadores, DTOs, controllers, persistencia y mappers.
+  - Los DTOs son conceptos de presentación/API, pertenecen exclusivamente a infraestructura.
+  - El mapper (MapStruct) vive en infraestructura: es un detalle de implementación del adaptador.
+  - El controller es responsable de traducir DTOs → domain objects antes de llamar al use case, y domain objects → DTOs al responder.
+
 ```text
-src/main/java/com/logistica/solicitar/
+src/main/java/com/logistica/consultar/
 ├── domain/
 │   ├── models/
-│   │   ├── Ruta.java                    # Reutilizar de asignar-ruta
-│   │   ├── Parada.java                  # Reutilizar
-│   │   ├── Vehiculo.java                # Reutilizar
-│   │   └── Pedido.java                  # Reutilizar
+│   │   ├── Ruta.java
+│   │   ├── Parada.java
+│   │   ├── Vehiculo.java
+│   │   └── Transportista.java          # NEW: Para autenticación y autorización
 │   ├── values/
-│   │   ├── PesoTotal.java               # Reutilizar
-│   │   ├── CapacidadCarga.java          # Reutilizar
-│   │   ├── TipoVehiculo.java            # Reutilizar
-│   │   ├── EstadoRuta.java              # Reutilizar
-│   │   └── EstadoParada.java            # Reutilizar
+│   │   ├── EstadoRuta.java            # Reutilizar de asignar-ruta
+│   │   └── EstadoParada.java          # Reutilizar de asignar-ruta
 │   ├── ports/
 │   │   ├── in/
-│   │   │   └── ProcesarSolicitudRutaUseCase.java  # NEW: Para procesar evento
+│   │   │   └── ConsultarParadasUseCase.java
 │   │   └── out/
-│   │       ├── RutaRepository.java      # Reutilizar
-│   │       ├── ParadaRepository.java    # Reutilizar
-│   │       ├── VehiculoRepository.java  # Reutilizar
-│   │       ├── PedidoRepository.java    # Reutilizar
-│   │       └── EventPublisher.java      # NEW: Para publicar eventos
+│   │       ├── RutaRepository.java
+│   │       ├── ParadaRepository.java
+│   │       └── TransportistaRepository.java  # NEW: Para verificar asignación
 │   └── exceptions/
-│       ├── CapacidadExcedidaException.java  # Reutilizar
-│       ├── VehiculoNoDisponibleException.java  # Reutilizar
-│       └── LogisticaException.java      # Reutilizar
+│       ├── AccesoDenegadoException.java      # NEW: Para FR-003
+│       └── LogisticaException.java           # Reutilizar
 │
 ├── application/
-│   ├── dto/
-│   │   ├── SolicitudRutaRequeridaEvent.java  # NEW: DTO para evento entrada
-│   │   ├── RutaAsignadaEvent.java       # NEW: DTO para evento salida
-│   │   ├── ErrorSolicitudRutaEvent.java # NEW: DTO para error
-│   │   └── RutaDTO.java                 # Reutilizar si aplica
-│   ├── services/
-│   │   ├── ProcesarSolicitudRutaService.java  # NEW: Lógica de procesamiento
-│   │   ├── SeleccionarVehiculoService.java    # Reutilizar
-│   │   └── EventPublisherService.java   # NEW: Adaptador para publicar
-│   └── mapper/
-│       └── SolicitarMapper.java         # NEW: MapStruct para eventos
+│   └── services/
+│       ├── ConsultarParadasService.java
+│       └── AutorizacionService.java         # NEW: Para verificar acceso
 │
 └── infrastructure/
     ├── config/
-    │   ├── JpaConfig.java               # Reutilizar
-    │   └── StreamConfig.java            # NEW: Config para Spring Cloud Stream
+    │   └── JpaConfig.java                   # Reutilizar
     ├── persistence/
     │   ├── jpa/
-    │   │   ├── RutaJpaEntity.java       # Reutilizar
-    │   │   ├── ParadaJpaEntity.java     # Reutilizar
-    │   │   ├── VehiculoJpaEntity.java   # Reutilizar
-    │   │   └── PedidoJpaEntity.java     # Reutilizar
+    │   │   ├── RutaJpaEntity.java           # Reutilizar
+    │   │   ├── ParadaJpaEntity.java         # Reutilizar
+    │   │   └── TransportistaJpaEntity.java  # NEW
     │   ├── repository/
-    │   │   ├── RutaRepositoryAdapter.java     # Reutilizar
-    │   │   ├── ParadaRepositoryAdapter.java   # Reutilizar
-    │   │   ├── VehiculoRepositoryAdapter.java # Reutilizar
-    │   │   └── PedidoRepositoryAdapter.java   # Reutilizar
+    │   │   ├── RutaRepositoryAdapter.java   # Reutilizar
+    │   │   ├── ParadaRepositoryAdapter.java # Reutilizar
+    │   │   └── TransportistaRepositoryAdapter.java  # NEW
     │   └── jparepository/
-    │       ├── RutaSpringRepository.java      # Reutilizar
-    │       ├── ParadaSpringRepository.java    # Reutilizar
-    │       ├── VehiculoSpringRepository.java  # Reutilizar
-    │       └── PedidoSpringRepository.java    # Reutilizar
-    ├── messaging/
-    │   └── event/
-    │       ├── SolicitudRutaEventListener.java  # NEW: Listener para evento entrada
-    │       └── EventPublisherAdapter.java       # NEW: Publisher para salida
+    │       ├── RutaSpringRepository.java    # Reutilizar
+    │       ├── ParadaSpringRepository.java  # Reutilizar
+    │       └── TransportistaSpringRepository.java  # NEW
+    ├── web/
+    │   ├── controller/
+    │   │   └── ConsultarController.java
+    │   └── dto/
+    │       ├── ConsultarParadasRequest.java     # Podría incluir idTransportista si no en auth
+    │       ├── ConsultarParadasResponse.java
+    │       ├── ParadaDTO.java
+    │       └── RutaDTO.java                     # Reutilizar si aplica
+    ├── mapper/
+    │   └── ConsultarMapper.java
     └── exception/
-        └── GlobalExceptionHandler.java   # Reutilizar, adaptar para eventos
+        └── GlobalExceptionHandler.java       # Reutilizar, agregar AccesoDenegadoException
 
-src/test/java/com/logistica/solicitar/
+src/test/java/com/logistica/consultar/
 ├── unit/
 │   ├── domain/
 │   │   ├── models/
-│   │   │   ├── RutaTest.java            # Reutilizar
-│   │   │   ├── ParadaTest.java          # Reutilizar
-│   │   │   ├── VehiculoTest.java        # Reutilizar
-│   │   │   └── PedidoTest.java          # Reutilizar
+│   │   │   ├── RutaTest.java                # Reutilizar
+│   │   │   ├── ParadaTest.java              # Reutilizar
+│   │   │   └── TransportistaTest.java       # NEW
 │   │   └── values/
-│   │       ├── TipoVehiculoTest.java    # Reutilizar
-│   │       ├── EstadoRutaTest.java      # Reutilizar
-│   │       └── EstadoParadaTest.java    # Reutilizar
+│   │       ├── EstadoRutaTest.java          # Reutilizar
+│   │       └── EstadoParadaTest.java        # Reutilizar
 │   ├── application/
-│   │   ├── ProcesarSolicitudRutaServiceTest.java
-│   │   ├── SeleccionarVehiculoServiceTest.java  # Reutilizar
-│   │   ├── EventPublisherServiceTest.java
-│   │   └── SolicitarMapperTest.java
+│   │   ├── ConsultarParadasServiceTest.java
+│   │   └── AutorizacionServiceTest.java     # NEW
 │   └── infrastructure/
-│       ├── RutaRepositoryAdapterTest.java     # Reutilizar
-│       ├── ParadaRepositoryAdapterTest.java   # Reutilizar
-│       ├── SolicitudRutaEventListenerTest.java
-│       └── EventPublisherAdapterTest.java
+│       ├── ConsultarMapperTest.java
+│       ├── RutaRepositoryAdapterTest.java   # Reutilizar
+│       ├── ParadaRepositoryAdapterTest.java # Reutilizar
+│       └── ConsultarControllerTest.java
 ├── integration/
-│   ├── RutaRepositoryIntegrationTest.java     # Reutilizar
-│   ├── ParadaRepositoryIntegrationTest.java   # Reutilizar
-│   └── ProcesarSolicitudRutaIntegrationTest.java
+│   ├── RutaRepositoryIntegrationTest.java   # Reutilizar
+│   ├── ParadaRepositoryIntegrationTest.java # Reutilizar
+│   └── ConsultarServiceIntegrationTest.java
 ├── contract/
-│   └── SolicitarEventContractTest.java        # NEW: Tests para contratos de eventos
+│   └── ConsultarApiContractTest.java
 └── testdata/
     ├── fixtures/
-    │   ├── RutaFixture.java             # Reutilizar
-    │   ├── ParadaFixture.java           # Reutilizar
-    │   ├── VehiculoFixture.java         # Reutilizar
-    │   ├── PedidoFixture.java           # Reutilizar
-    │   └── SolicitudRutaRequeridaFixture.java  # NEW
+    │   ├── RutaFixture.java                 # Reutilizar
+    │   ├── ParadaFixture.java               # Reutilizar
+    │   └── TransportistaFixture.java        # NEW
     ├── builders/
-    │   ├── RutaBuilder.java             # Reutilizar
-    │   ├── ParadaBuilder.java           # Reutilizar
-    │   └── SolicitudRutaRequeridaBuilder.java  # NEW
+    │   ├── RutaBuilder.java                 # Reutilizar
+    │   ├── ParadaBuilder.java               # Reutilizar
+    │   └── ConsultarParadasRequestBuilder.java
     └── containers/
-        ├── PostgreSQLContainer.java     # Reutilizar
-        └── RabbitMQContainer.java       # NEW: Para tests de messaging
+        └── PostgreSQLContainer.java          # Reutilizar
 ```
 
-**Structure Decision**: Arquitectura hexagonal con reutilización masiva de componentes de asignar-ruta. Nuevos adaptadores para messaging en `infrastructure/messaging/`. Eventos manejados como DTOs en application layer.
+**Structure Decision**: Arquitectura hexagonal con tres capas (domain, application, infrastructure). El domain no tiene dependencias de frameworks. Los ports se ubican en `domain/ports/in` y `domain/ports/out` para reflejar su naturaleza semántica. El único adaptador de entrada HTTP es `ConsultarController`, que agrupa el caso de uso de la user story.
 
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Configurar proyecto, dependencias incluyendo messaging, y base de datos.
+**Purpose**: Configurar el proyecto Gradle, dependencias y base de datos, reutilizando de asignar-ruta si ya existe.
 
-- [ ] T001: Crear proyecto con `build.gradle.kts` e incluir dependencias: `spring-boot-starter-web`, `spring-cloud-starter-stream-rabbit`, `spring-boot-starter-data-jpa`, `postgresql`, `flyway-core`, `lombok`, `mapstruct`, `springdoc-openapi-starter-webmvc-ui`, `spring-boot-starter-test`, `testcontainers`, `archunit`.
-- [ ] T002: Configurar `application.yml` con conexión PostgreSQL, RabbitMQ, y profiles `dev`, `test`, `prod`.
-- [ ] T003: Crear scripts de migración Flyway (reutilizar de asignar-ruta).
-- [ ] T004: Configurar `ArchUnit` con reglas de capas.
-- [ ] T005: Configurar `PostgreSQLContainer.java` y `RabbitMQContainer.java` para TestContainers.
+- [ ] T001: Verificar o crear proyecto con `build.gradle.kts` e incluir dependencias: `spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `postgresql`, `flyway-core`, `lombok`, `mapstruct`, `springdoc-openapi-starter-webmvc-ui`, `spring-boot-starter-test`, `testcontainers`, `archunit`.
+- [ ] T002: Configurar `application.yml` con conexión PostgreSQL y profiles `dev`, `test`, `prod`.
+- [ ] T003: Actualizar scripts de migración Flyway si es necesario:
+  - Agregar `V6__create_transportista_table.sql` — (idTransportista, nombre, estado)
+  - Actualizar índices si aplica.
+- [ ] T004: Configurar `ArchUnit` con reglas de capas: domain sin imports de Spring/JPA, application sin imports de infrastructure.
+- [ ] T005: Configurar `PostgreSQLContainer.java` base para TestContainers reutilizable.
 
-**Checkpoint**: Proyecto compila, migraciones y contenedores levantan.
+**Checkpoint**: Proyecto compila, migraciones corren sin error, contenedor de test levanta correctamente.
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Reutilizar y crear componentes base.
+**Purpose**: Crear componentes base compartidos y nuevos necesarios para la consulta.
 
 **⚠️ CRÍTICO**: Depende de Phase 1.
 
-- [ ] T006: Reutilizar Value Objects y entidades del domain.
-- [ ] T007: Reutilizar excepciones.
-- [ ] T008: Reutilizar puertos outbound, agregar `EventPublisher`.
-- [ ] T009: Crear puerto inbound `ProcesarSolicitudRutaUseCase.java`.
-- [ ] T010: Crear DTOs para eventos: `SolicitudRutaRequeridaEvent`, `RutaAsignadaEvent`, `ErrorSolicitudRutaEvent`.
-- [ ] T011: Crear `SolicitarMapper.java`.
-- [ ] T012: Reutilizar JPA Entities y Spring Repositories.
-- [ ] T013: Crear `EventPublisherAdapter.java` implementando `EventPublisher`.
-- [ ] T014: Actualizar `GlobalExceptionHandler` para eventos.
+- [ ] T006: Reutilizar Value Objects del domain: `EstadoRuta`, `EstadoParada`.
+- [ ] T007: Reutilizar entidades del domain: `Ruta`, `Parada`, `Vehiculo`.
+- [ ] T008: Crear nueva entidad `Transportista.java` — idTransportista, nombre, estado.
+- [ ] T009: Crear nueva excepción `AccesoDenegadoException.java`.
+- [ ] T010: Actualizar puertos outbound:
+  - Reutilizar `RutaRepository`, `ParadaRepository`.
+  - Crear `TransportistaRepository` — `findById`, `findRutasAsignadas`.
+- [ ] T011: Crear puerto inbound `ConsultarParadasUseCase.java`.
+- [ ] T012: Crear DTOs en `infrastructure/web/dto/`: `ConsultarParadasRequest.java`, `ConsultarParadasResponse.java`, `ParadaDTO.java`.
+- [ ] T013: Crear `ConsultarMapper.java` en `infrastructure/mapper/` con MapStruct.
+- [ ] T014: Reutilizar JPA Entities: `RutaJpaEntity`, `ParadaJpaEntity`.
+- [ ] T015: Crear `TransportistaJpaEntity.java`.
+- [ ] T016: Reutilizar Spring Data JPA interfaces: `RutaSpringRepository`, `ParadaSpringRepository`.
+- [ ] T017: Crear `TransportistaSpringRepository.java`.
+- [ ] T018: Actualizar `GlobalExceptionHandler.java` para `AccesoDenegadoException` → HTTP 403.
+- [ ] T019: Crear `AutorizacionService.java` — verifica si ruta está asignada al transportista.
+- [ ] T020: Crear fixtures base: `TransportistaFixture.java` con datos de prueba estándar.
+- [ ] T021: Unit tests para `Transportista.java` — validar creación y estado.
 
-**Checkpoint**: Componentes base listos.
-
----
-
-## Phase 3: Scenario 1 — Procesar solicitud y asignar a ruta existente (P1)
-
-**Goal**: Recibir evento, asignar a ruta existente si capacidad, publicar "RutaAsignada".
-
-**Independent Test**: Enviar evento "SolicitudRutaRequerida", verificar publicación de "RutaAsignada" con ruta existente.
-
-### Tests para Scenario 1
-
-- [ ] T015 [P]: Contract test en `SolicitarEventContractTest` — evento válido con ruta disponible → publica "RutaAsignada".
-- [ ] T016: Integration test — flujo completo con DB y RabbitMQ simulados.
-
-### Implementación de Scenario 1
-
-- [ ] T017: Implementar `ProcesarSolicitudRutaService.java` — lógica similar a AsignarPedidoService.
-- [ ] T018: Crear `SolicitudRutaEventListener.java` — @StreamListener para "SolicitudRutaRequerida".
-- [ ] T019: Unit tests para service y listener.
-
-**Checkpoint**: Scenario 1 funciona.
+**Checkpoint**: Componentes base creados. Proyecto compila sin errores.
 
 ---
 
-## Phase 4: Scenario 2 — Crear nueva ruta cuando no hay capacidad (P1)
+## Phase 3: Implementación de Consulta (P1)
 
-**Goal**: Si no hay ruta disponible, crear nueva y publicar evento.
+**Goal**: Implementar el endpoint para consultar paradas, con autorización y logging.
 
-**Independent Test**: Evento sin rutas disponibles → nueva ruta creada, evento publicado.
+**Independent Test**: Dado un transportista con ruta asignada, GET /api/logistica/rutas/{idRuta}/paradas retorna lista de paradas ordenadas.
 
-### Tests para Scenario 2
+### Tests para Implementación
 
-- [ ] T020 [P]: Contract test — sin rutas → "RutaAsignada" con nueva idRuta.
+- [ ] T022 [P]: Contract test en `ConsultarApiContractTest` — GET con ruta asignada → HTTP 200, lista de paradas.
+- [ ] T023 [P]: Contract test — GET con ruta no asignada → HTTP 403.
+- [ ] T024: Integration test en `ConsultarServiceIntegrationTest` — flujo completo con DB real.
+- [ ] T025: Unit test en `AutorizacionServiceTest` — verificar acceso permitido/denegado.
 
-### Implementación de Scenario 2
+### Implementación
 
-- [ ] T021: Extender service para crear ruta nueva (reutilizar lógica).
-- [ ] T022: Unit tests.
+- [ ] T026: Implementar `ConsultarParadasService.java` — verifica autorización, obtiene paradas ordenadas.
+- [ ] T027: Crear `ConsultarController.java` con `GET /api/logistica/rutas/{idRuta}/paradas`, inyectando `ConsultarParadasUseCase`.
+- [ ] T028: Agregar logging en service: INFO para consultas exitosas, WARN para denegadas.
+- [ ] T029: Unit tests para `ConsultarParadasService` y `ConsultarController`.
 
-**Checkpoint**: Scenario 2 funciona.
-
----
-
-## Phase 5: Scenario 3 — Cerrar ruta al 95% (P1)
-
-**Goal**: Al asignar, si alcanza 95%, cerrar ruta.
-
-**Independent Test**: Asignación que lleva a 95% → ruta cerrada en evento.
-
-### Tests para Scenario 3
-
-- [ ] T023 [P]: Contract test — asignación a 95% → estado cerrada en evento.
-
-### Implementación de Scenario 3
-
-- [ ] T024: Extender lógica de cierre (reutilizar de asignar-ruta).
-- [ ] T025: Unit tests.
-
-**Checkpoint**: Todos scenarios funcionan.
+**Checkpoint**: Endpoint funciona end-to-end. Tests pasan.
 
 ---
 
-## Phase 6: Edge Cases y Error Handling
+## Phase 4: Polish & Cross-Cutting Concerns
 
-**Purpose**: Manejar casos edge y errores.
+**Purpose**: Validaciones, documentación, performance, observabilidad y hardening que afectan el escenario.
 
-- [ ] T026: Manejar capacidad exacta → asignar y cerrar.
-- [ ] T027: Peso > máxima capacidad → nueva ruta.
-- [ ] T028: Datos inválidos → publicar "ErrorSolicitudRuta".
-- [ ] T029: Tests para edge cases.
+- [ ] T030: Logging estratégico con `@Slf4j`:
+  - INFO al inicio/fin de cada consulta (idRuta consultada, cantidad de paradas retornadas)
+  - WARN en intento de acceso denegado (idTransportista, idRuta rechazada)
+  - ERROR en excepciones inesperadas con contexto completo
+- [ ] T031: Bean Validation en requests si aplica (aunque GET, validar path params).
+- [ ] T032: Documentar API con `springdoc-openapi`: el endpoint, request/response schemas, códigos HTTP posibles (200, 403, 404)
+- [ ] T033: `@ArchTest` con ArchUnit:
+  - domain: sin imports de Spring, JPA, web
+  - application: puede importar domain, no infrastructure
+  - infrastructure: puede importar todo
+  - Verificar que ninguna clase en `domain/` o `application/` importa clases de `infrastructure/`
+- [ ] T034: Optimización de queries — revisar N+1 en consulta de paradas, validar índices en `paradas.id_ruta` y `paradas.secuencia` con EXPLAIN ANALYZE
+- [ ] T035: Configurar `/actuator/health` con BD connectivity check
+- [ ] T036: Code coverage con Jacoco — verificar target ≥80% global, 100% domain layer
+- [ ] T037: README con build/run commands, test execution (unit / integration / all), ejemplos curl del endpoint
+- [ ] T038: Pre-deployment checklist: tests 100% passing, ArchUnit passing, coverage ≥80%, sin vulnerabilidades en dependencias
 
-**Checkpoint**: Edge cases cubiertos.
-
----
-
-## Phase 7: Polish & Cross-Cutting Concerns
-
-**Purpose**: Logging, validación, docs, performance.
-
-- [ ] T030: Logging estratégico: INFO para procesamientos, ERROR para fallos.
-- [ ] T031: Validación en eventos.
-- [ ] T032: Documentar contratos de eventos.
-- [ ] T033: Test de concurrencia.
-- [ ] T034: Code coverage ≥80%.
-- [ ] T035: README con ejemplos de eventos.
-
-**Checkpoint**: Production-ready. SC-001 y SC-002 verificables.
+**Checkpoint**: Código production-ready. El success criterion del spec (SC-001) verificable con tests automáticos.
 
 ---
 
@@ -276,19 +237,26 @@ src/test/java/com/logistica/solicitar/
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: Sin deps.
-- **Foundational (Phase 2)**: Phase 1.
-- **Scenarios (Phases 3-5)**: Phase 2.
-- **Edge Cases (Phase 6)**: Phases 3-5.
-- **Polish (Phase 7)**: Todas previas.
+- **Setup (Phase 1)**: Sin dependencias — puede iniciar de inmediato.
+- **Foundational (Phase 2)**: Depende de Phase 1 — **bloquea la implementación**.
+- **Implementación (Phase 3)**: Depende de Phase 2. Sin dependencias de otros escenarios.
+- **Polish (Phase 4)**: Depende de que Phase 3 esté completa.
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Depende de fases completas.
+- **User Story 1 (P1)**: Puede iniciar en cuanto Phase 2 esté completa. Sin dependencias de otros escenarios.
+
+### Within Each User Story
+
+- Domain models y métodos → Ports (interfaces) → Repository Adapters → Service → Controller
+- Tests de contrato e integración (`[P]`) antes de la implementación
+- Unit tests inline con cada componente
+- Checkpoint al final antes de pasar a la siguiente fase
 
 ## Notes
 
-- Reutilización máxima de asignar-ruta.
-- Eventos asíncronos, no REST.
-- Etiqueta `[P]` para tests first.
-- Commit con tests verdes.
+- La etiqueta `[P]` indica test que debe escribirse antes de la implementación (test-first).
+- Los services de `application/` son los únicos que implementan los use cases; reciben y retornan domain objects. Nunca reciben ni producen DTOs directamente.
+- El controller (`ConsultarController`) es el único punto donde se realizan conversiones DTO ↔ domain, delegando siempre en `ConsultarMapper`.
+- Reutilizar componentes de asignar-ruta donde posible.
+- Commit después de cada tarea completada con tests verdes.
