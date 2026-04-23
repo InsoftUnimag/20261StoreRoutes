@@ -193,7 +193,7 @@ public record LogisticWeight(BigDecimal valueKg) {
 **VehicleType.java** — única fuente de verdad para clasificar peso → tipo de vehículo:
 ```java
 public enum VehicleType {
-    URBAN_VAN     (BigDecimal.valueOf(1_500),  "CAMIONETA"),
+    URBAN_VAN     (BigDecimal.valueOf(1_500),  "CAMIONETA_URBANA"),
     SINGLE_TRUCK  (BigDecimal.valueOf(5_000),  "CAMION_SENCILLO"),
     REGIONAL_SEMI (BigDecimal.valueOf(25_000), "TRACTOCAMION_REGIONAL");
 
