@@ -1,0 +1,139 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Interna - Consultar Paradas de Rutas",
+    "description": "Servicio interno para que transportistas consulten las paradas de una ruta asignada y monitoreen el progreso de las entregas.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "Servidor local de desarrollo"
+    }
+  ],
+  "paths": {
+    "/rutas/{idRuta}/paradas": {
+      "get": {
+        "summary": "Listar paradas de una ruta asignada",
+        "description": "Obtiene la lista de paradas para la ruta especificada si el transportista está autorizado a consultarla.",
+        "operationId": "getParadasPorRuta",
+        "parameters": [
+          {
+            "name": "idRuta",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "X-Id-Transportista",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Identificador del transportista que realiza la consulta."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de paradas de la ruta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParadaListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Ruta no asignada o acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ruta no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ParadaListResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "example": 3
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParadaResumen"
+            }
+          }
+        }
+      },
+      "ParadaResumen": {
+        "type": "object",
+        "properties": {
+          "idParada": {
+            "type": "integer",
+            "example": 101
+          },
+          "idRuta": {
+            "type": "integer",
+            "example": 1001
+          },
+          "idPedido": {
+            "type": "integer",
+            "example": 5001
+          },
+          "idCliente": {
+            "type": "integer",
+            "example": 2001
+          },
+          "direccion": {
+            "type": "string",
+            "example": "Calle 123 #45-67, Bogotá"
+          },
+          "contactoCliente": {
+            "type": "string",
+            "example": "Juan Pérez - 3001234567"
+          },
+          "secuencia": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "example": "ACCESO_DENEGADO"
+          },
+          "mensaje": {
+            "type": "string",
+            "example": "No está autorizado para consultar esta ruta"
+          }
+        }
+      }
+    }
+  }
+}
