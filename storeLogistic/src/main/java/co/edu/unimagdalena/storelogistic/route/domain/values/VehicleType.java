@@ -5,7 +5,7 @@ import co.edu.unimagdalena.storelogistic.route.domain.exceptions.CapacityExceede
 import java.math.BigDecimal;
 
 public enum VehicleType {
-    URBAN_VAN   (BigDecimal.valueOf(1_500),  "CAMIONETA"),
+    URBAN_VAN   (BigDecimal.valueOf(1_500),  "CAMIONETA_URBANA"),
     SINGLE_TRUCK(BigDecimal.valueOf(5_000),  "CAMION_SENCILLO"),
     REGIONAL_SEMI(BigDecimal.valueOf(25_000), "TRACTOCAMION_REGIONAL");
 
