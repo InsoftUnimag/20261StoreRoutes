@@ -2,9 +2,9 @@ spring:
   application:
     name: storeLogistic
   datasource:
-    url: jdbc:postgresql://localhost:5432/storeLogistic
-    username: postgres
-    password: 1082876634
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/storeLogistic}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:1082876634}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -21,9 +21,35 @@ spring:
     locations: classpath:db/migration
     baselineOnMigrate: true
     validate-on-migrate: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    connection-timeout: 5000
+  cloud:
+    stream:
+      bindings:
+        procesarSolicitudRuta-in-0:
+          destination: solicitud-ruta.request
+          group: logistica-solicitud-ruta
+          consumer:
+            max-attempts: 3
+        publicarRutaAsignada-out-0:
+          destination: ruta-asignada.response
+        publicarErrorSolicitud-out-0:
+          destination: error-solicitud-ruta.response
+      rabbit:
+        bindings:
+          procesarSolicitudRuta-in-0:
+            consumer:
+              auto-bind-dlq: true
+              dlq-ttl: 300000
+              requeue-rejected: false
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api/v1
 
@@ -37,4 +63,34 @@ springdoc:
 logistics:
   transporter:
     service:
-      url: http://localhost:8081/api/v1
+      url: ${TRANSPORTER_SERVICE_URL:http://localhost:8081/api/v1}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:tc:postgresql:16:///storelogistic_test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  flyway:
+    validate-on-migrate: false
+  cloud:
+    stream:
+      default-binder: rabbit
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    show-sql: false

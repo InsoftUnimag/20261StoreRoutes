@@ -1,0 +1,334 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Interna - Asignación de Rutas",
+    "description": "Servicio interno para la asignación automática de pedidos a rutas de entrega (Módulo 2: Logística)",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/logistics",
+      "description": "Servidor local de desarrollo"
+    }
+  ],
+  "paths": {
+    "/routes/assignments": {
+      "post": {
+        "summary": "Asignar pedido a ruta",
+        "description": "Asigna un pedido a una ruta disponible con capacidad suficiente. Si no existe ninguna ruta disponible, crea una nueva y le asigna el vehículo más eficiente. Cierra automáticamente la ruta si alcanza el 95% de su capacidad total.",
+        "operationId": "assignOrderToRoute",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pedido asignado a ruta existente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignOrderResponse"
+                },
+                "example": {
+                  "idRuta": "ruta-001",
+                  "idVehiculo": 3,
+                  "pesoAcumulado": 1200.0,
+                  "capacidadTotal": 1500.0,
+                  "porcentajeOcupacion": 80.0,
+                  "estadoRuta": "AVAILABLE",
+                  "fechaDespacho": "2026-04-22",
+                  "parada": {
+                    "idParada": "parada-007",
+                    "idPedido": 123,
+                    "secuencia": 4,
+                    "direccionEntrega": "Calle 15 #23-45, Bogotá",
+                    "estadoParada": "PENDING",
+                    "fechaEntrega": null
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Pedido asignado a nueva ruta creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignOrderResponse"
+                },
+                "example": {
+                  "idRuta": "ruta-099",
+                  "idVehiculo": 7,
+                  "pesoAcumulado": 800.0,
+                  "capacidadTotal": 5000.0,
+                  "porcentajeOcupacion": 16.0,
+                  "estadoRuta": "AVAILABLE",
+                  "fechaDespacho": "2026-04-22",
+                  "parada": {
+                    "idParada": "parada-001",
+                    "idPedido": 456,
+                    "secuencia": 1,
+                    "direccionEntrega": "Carrera 8 #12-30, Medellín",
+                    "estadoParada": "PENDING",
+                    "fechaEntrega": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida — orderId ausente o con formato incorrecto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "VALIDACION_FALLIDA",
+                  "mensaje": "El campo orderId es obligatorio y debe ser un número entero válido"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "PEDIDO_NO_ENCONTRADO",
+                  "mensaje": "No existe un pedido con el id proporcionado"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El peso del pedido supera la capacidad máxima de cualquier vehículo disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "CAPACIDAD_EXCEDIDA",
+                  "mensaje": "El peso del pedido supera la capacidad máxima del vehículo disponible (25000 kg)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/routes/{idRuta}": {
+      "get": {
+        "summary": "Obtener detalle de ruta",
+        "description": "Retorna el detalle completo de una ruta, incluyendo sus paradas y el estado actual de ocupación.",
+        "operationId": "getRouteById",
+        "parameters": [
+          {
+            "name": "idRuta",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ruta-001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle de la ruta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ruta no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "RUTA_NO_ENCONTRADA",
+                  "mensaje": "No existe una ruta con el id proporcionado"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AssignOrderRequest": {
+        "type": "object",
+        "required": ["orderId"],
+        "properties": {
+          "orderId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador único del pedido a asignar. Proporcionado por el módulo de pedidos.",
+            "example": 123
+          }
+        }
+      },
+      "AssignOrderResponse": {
+        "type": "object",
+        "properties": {
+          "idRuta": {
+            "type": "string",
+            "description": "Identificador único de la ruta asignada (existente o recién creada).",
+            "example": "ruta-001"
+          },
+          "idVehiculo": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Identificador del vehículo asignado. Null si la ruta fue creada en estado PENDING_VEHICLE.",
+            "example": 3
+          },
+          "pesoAcumulado": {
+            "type": "number",
+            "description": "Peso total acumulado en la ruta tras la asignación del pedido (en kg).",
+            "example": 1200.0
+          },
+          "capacidadTotal": {
+            "type": "number",
+            "description": "Capacidad máxima de carga del vehículo asignado a la ruta (en kg).",
+            "example": 1500.0
+          },
+          "porcentajeOcupacion": {
+            "type": "number",
+            "description": "Porcentaje de ocupación actual de la ruta. Si alcanza o supera 95%, la ruta queda cerrada.",
+            "example": 80.0
+          },
+          "estadoRuta": {
+            "type": "string",
+            "description": "Estado actual de la ruta tras la asignación.",
+            "enum": ["AVAILABLE", "CLOSED", "PENDING_VEHICLE"],
+            "example": "AVAILABLE"
+          },
+          "fechaDespacho": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha programada de despacho de la ruta.",
+            "example": "2026-04-22"
+          },
+          "parada": {
+            "$ref": "#/components/schemas/ParadaResponse",
+            "description": "Parada creada para el pedido dentro de la ruta. Null si la ruta quedó en estado PENDING_VEHICLE."
+          }
+        }
+      },
+      "ParadaResponse": {
+        "type": "object",
+        "properties": {
+          "idParada": {
+            "type": "string",
+            "description": "Identificador único de la parada.",
+            "example": "parada-007"
+          },
+          "idPedido": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador del pedido asociado a esta parada. Proporcionado por el módulo de pedidos.",
+            "example": 123
+          },
+          "secuencia": {
+            "type": "integer",
+            "description": "Orden de entrega de esta parada dentro de la ruta.",
+            "example": 4
+          },
+          "direccionEntrega": {
+            "type": "string",
+            "description": "Dirección de entrega del pedido.",
+            "example": "Calle 15 #23-45, Bogotá"
+          },
+          "estadoParada": {
+            "type": "string",
+            "description": "Estado actual de la parada.",
+            "enum": ["PENDING", "DELIVERED", "REJECTED"],
+            "example": "PENDING"
+          },
+          "fechaEntrega": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Fecha de entrega efectiva. Null mientras el estado sea PENDING.",
+            "example": null
+          }
+        }
+      },
+      "RouteDetailResponse": {
+        "type": "object",
+        "properties": {
+          "idRuta": {
+            "type": "string",
+            "example": "ruta-001"
+          },
+          "idVehiculo": {
+            "type": "integer",
+            "nullable": true,
+            "example": 3
+          },
+          "capacidadTotal": {
+            "type": "number",
+            "example": 1500.0
+          },
+          "pesoAcumulado": {
+            "type": "number",
+            "example": 1200.0
+          },
+          "porcentajeOcupacion": {
+            "type": "number",
+            "example": 80.0
+          },
+          "estadoRuta": {
+            "type": "string",
+            "enum": ["AVAILABLE", "CLOSED", "PENDING_VEHICLE"],
+            "example": "AVAILABLE"
+          },
+          "fechaDespacho": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-04-22"
+          },
+          "paradas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParadaResponse"
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "description": "Código de error de negocio.",
+            "example": "CAPACIDAD_EXCEDIDA"
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Descripción legible del error.",
+            "example": "El peso del pedido supera la capacidad máxima del vehículo disponible"
+          }
+        }
+      }
+    }
+  }
+}
