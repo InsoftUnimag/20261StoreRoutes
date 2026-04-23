@@ -1,6 +1,7 @@
 package co.edu.unimagdalena.storelogistic.route.domain.models;
 
 import co.edu.unimagdalena.storelogistic.route.domain.exceptions.CapacityExceededException;
+import co.edu.unimagdalena.storelogistic.route.domain.exceptions.InvalidStateTransitionException;
 import co.edu.unimagdalena.storelogistic.route.domain.values.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -147,6 +148,41 @@ class RouteTest {
     void close_changesStatusToClosed() {
         emptyRoute.close();
         assertThat(emptyRoute.status()).isEqualTo(RouteStatus.CLOSED);
+    }
+
+    // ── state transition validation ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("close → throws when route is already CLOSED")
+    void close_alreadyClosed_throwsInvalidTransition() {
+        emptyRoute.close();
+        assertThatThrownBy(emptyRoute::close)
+                .isInstanceOf(InvalidStateTransitionException.class)
+                .hasMessageContaining("CLOSED");
+    }
+
+    @Test
+    @DisplayName("close → throws when route is PENDING_VEHICLE")
+    void close_pendingVehicle_throwsInvalidTransition() {
+        Route pending = Route.createNew(null, CAPACITY_1500, TODAY);
+        assertThatThrownBy(pending::close)
+                .isInstanceOf(InvalidStateTransitionException.class)
+                .hasMessageContaining("PENDING_VEHICLE");
+    }
+
+    @Test
+    @DisplayName("activate → PENDING_VEHICLE to AVAILABLE is valid")
+    void activate_pendingToAvailable_succeeds() {
+        Route pending = Route.createNew(null, CAPACITY_1500, TODAY);
+        pending.activate();
+        assertThat(pending.status()).isEqualTo(RouteStatus.AVAILABLE);
+    }
+
+    @Test
+    @DisplayName("activate → throws when route is already AVAILABLE")
+    void activate_alreadyAvailable_throwsInvalidTransition() {
+        assertThatThrownBy(emptyRoute::activate)
+                .isInstanceOf(InvalidStateTransitionException.class);
     }
 
     // ── createNew ────────────────────────────────────────────────────────────

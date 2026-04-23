@@ -1,6 +1,7 @@
 package co.edu.unimagdalena.storelogistic.route.domain.models;
 
 import co.edu.unimagdalena.storelogistic.route.domain.exceptions.CapacityExceededException;
+import co.edu.unimagdalena.storelogistic.route.domain.exceptions.InvalidStateTransitionException;
 import co.edu.unimagdalena.storelogistic.route.domain.values.LogisticWeight;
 import co.edu.unimagdalena.storelogistic.route.domain.values.RouteCapacity;
 import co.edu.unimagdalena.storelogistic.route.domain.values.RouteStatus;
@@ -66,7 +67,15 @@ public class Route {
     }
 
     public void close() {
+        if (!status.isValidTransition(RouteStatus.CLOSED))
+            throw new InvalidStateTransitionException(status.invalidTransitionMessage(RouteStatus.CLOSED));
         this.status = RouteStatus.CLOSED;
+    }
+
+    public void activate() {
+        if (!status.isValidTransition(RouteStatus.AVAILABLE))
+            throw new InvalidStateTransitionException(status.invalidTransitionMessage(RouteStatus.AVAILABLE));
+        this.status = RouteStatus.AVAILABLE;
     }
 
     public Stop assignOrder(Order order) {

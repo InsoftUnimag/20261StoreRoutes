@@ -2,6 +2,7 @@ package co.edu.unimagdalena.storelogistic.route.infrastructure.exception;
 
 import co.edu.unimagdalena.storelogistic.fleet.infrastructure.exception.ErrorResponse;
 import co.edu.unimagdalena.storelogistic.route.domain.exceptions.CapacityExceededException;
+import co.edu.unimagdalena.storelogistic.route.domain.exceptions.InvalidStateTransitionException;
 import co.edu.unimagdalena.storelogistic.route.domain.exceptions.OrderNotFoundException;
 import co.edu.unimagdalena.storelogistic.route.domain.exceptions.RouteNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,13 @@ import java.util.HashMap;
 @Slf4j
 @RestControllerAdvice(basePackages = "co.edu.unimagdalena.storelogistic.route")
 public class RouteExceptionHandler {
+
+    @ExceptionHandler(InvalidStateTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransition(InvalidStateTransitionException ex, WebRequest request) {
+        log.warn("Invalid state transition: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(buildError("INVALID_STATE_TRANSITION", ex.getMessage()));
+    }
 
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleOrderNotFound(OrderNotFoundException ex, WebRequest request) {

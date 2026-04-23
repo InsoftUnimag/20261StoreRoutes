@@ -1,5 +1,6 @@
 package co.edu.unimagdalena.storelogistic.route.domain.models;
 
+import co.edu.unimagdalena.storelogistic.route.domain.exceptions.InvalidStateTransitionException;
 import co.edu.unimagdalena.storelogistic.route.domain.values.StopStatus;
 
 import java.time.LocalDate;
@@ -40,11 +41,15 @@ public class Stop {
     }
 
     public void markDelivered(LocalDate date) {
+        if (!status.isValidTransition(StopStatus.DELIVERED))
+            throw new InvalidStateTransitionException(status.invalidTransitionMessage(StopStatus.DELIVERED));
         this.status       = StopStatus.DELIVERED;
         this.deliveryDate = date;
     }
 
     public void markRejected() {
+        if (!status.isValidTransition(StopStatus.REJECTED))
+            throw new InvalidStateTransitionException(status.invalidTransitionMessage(StopStatus.REJECTED));
         this.status = StopStatus.REJECTED;
     }
 
