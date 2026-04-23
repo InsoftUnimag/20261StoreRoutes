@@ -1,0 +1,282 @@
+package co.edu.unimagdalena.storelogistic.flota.domain.values;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+/**
+ * Value Object de dominio para representar filtros de búsqueda de vehículos.
+ * Sin anotaciones de Spring ni Bean Validation - es lógica pura de dominio.
+ */
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class FiltroVehiculo {
+    private TipoCategoria categoria;
+    private CapacidadCarga capacidadMin;
+    private CapacidadCarga capacidadMax;
+    private EstadoVehiculo estado;
+
+    /**
+     * Valida que si ambas capacidades están presentes, min <= max
+     */
+    public boolean esValido() {
+        if (capacidadMin != null && capacidadMax != null) {
+            return capacidadMin.getPesoKg().compareTo(capacidadMax.getPesoKg()) <= 0;
+        }
+        return true;
+    }
+}{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Interna - Gestión de Flota",
+    "description": "Servicio interno para la gestión de vehículos de flota (Frontend ↔ Backend)",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "Servidor local de desarrollo"
+    }
+  ],
+  "paths": {
+    "/vehiculos": {
+      "get": {
+        "summary": "Listar vehículos",
+        "description": "Obtiene la lista de vehículos con filtros opcionales",
+        "operationId": "getVehiculos",
+        "parameters": [
+          {
+            "name": "categoria",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["CAMIONETA_URBANA", "CAMION_SENCILLO", "TRACTOCAMION_REGIONAL"]
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["DISPONIBLE", "EN_RUTA", "EN_MANTENIMIENTO", "FUERA_SERVICIO"]
+            }
+          },
+          {
+            "name": "capacidadMin",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "capacidadMax",
+            "in": "query",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado de vehículos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Registrar vehículo",
+        "operationId": "createVehiculo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVehiculoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vehículo creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehiculos/{idVehiculo}": {
+      "get": {
+        "summary": "Obtener detalle de vehículo",
+        "operationId": "getVehiculoById",
+        "parameters": [
+          {
+            "name": "idVehiculo",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del vehículo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vehículo no encontrado"
+          }
+        }
+      }
+    },
+    "/vehiculos/{idVehiculo}/estado": {
+      "patch": {
+        "summary": "Cambiar estado del vehículo",
+        "operationId": "updateEstadoVehiculo",
+        "parameters": [
+          {
+            "name": "idVehiculo",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEstadoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado actualizado correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoDetailResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transición de estado inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "VehiculoListResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "example": 50
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VehiculoResumen"
+            }
+          }
+        }
+      },
+      "VehiculoResumen": {
+        "type": "object",
+        "properties": {
+          "idVehiculo": { "type": "integer", "example": 1 },
+          "categoria": { "type": "string", "example": "CAMIONETA_URBANA" },
+          "estado": { "type": "string", "example": "DISPONIBLE" },
+          "capacidadCarga": { "type": "number", "example": 1500 },
+          "pesoActual": { "type": "number", "example": 500 },
+          "porcentajeOcupacion": { "type": "number", "example": 33.3 }
+        }
+      },
+      "VehiculoDetailResponse": {
+        "type": "object",
+        "properties": {
+          "idVehiculo": { "type": "integer", "example": 1 },
+          "idTransportista": { "type": "integer", "example": 10 },
+          "categoria": { "type": "string", "example": "CAMIONETA_URBANA" },
+          "capacidadCarga": { "type": "number", "example": 1500 },
+          "estado": { "type": "string", "example": "DISPONIBLE" },
+          "pesoActual": { "type": "number", "example": 500 },
+          "porcentajeOcupacion": { "type": "number", "example": 33.3 },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-09T10:00:00"
+          }
+        }
+      },
+      "CreateVehiculoRequest": {
+        "type": "object",
+        "required": ["categoria", "capacidadCarga", "idTransportista"],
+        "properties": {
+          "categoria": {
+            "type": "string",
+            "example": "CAMIONETA_URBANA"
+          },
+          "capacidadCarga": {
+            "type": "number",
+            "example": 1500
+          },
+          "idTransportista": {
+            "type": "integer",
+            "example": 10
+          }
+        }
+      },
+      "UpdateEstadoRequest": {
+        "type": "object",
+        "required": ["nuevoEstado"],
+        "properties": {
+          "nuevoEstado": {
+            "type": "string",
+            "example": "DISPONIBLE"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "example": "ESTADO_INVALIDO"
+          },
+          "mensaje": {
+            "type": "string",
+            "example": "No se permite la transición de estado"
+          }
+        }
+      }
+    }
+  }
+}
