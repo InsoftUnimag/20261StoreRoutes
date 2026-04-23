@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: storeLogistic
+  datasource:
+    url: jdbc:postgresql://localhost:5432/storeLogistic
+    username: postgres
+    password: 1082876634
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+  flyway:
+    locations: classpath:db/migration
+    baselineOnMigrate: true
+    validate-on-migrate: false
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+springdoc:
+  api-docs:
+    path: /docs/openapi.json
+  swagger-ui:
+    path: /docs/swagger-ui.html
+    enabled: true
+
+logistics:
+  transporter:
+    service:
+      url: http://localhost:8081/api/v1
