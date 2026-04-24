@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "co.edu.unimagdalena.storelogistic.fleet")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidStateTransitionException.class)

@@ -1,0 +1,295 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Interna - Solicitar Ruta",
+    "description": "Servicio interno para recibir solicitudes de ruta de Inventario y responder con rutas asignadas o errores. Comunicación asíncrona por eventos RabbitMQ entre Módulo de Inventario y Módulo de Logística.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Servidor local de desarrollo"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "SolicitudRutaRequeridaEvent": {
+        "type": "object",
+        "description": "Evento de entrada enviado por Inventario al módulo de Logística con los datos básicos del pedido.",
+        "required": ["idPedido", "idCliente", "pesoTotal", "direccion_entrega"],
+        "properties": {
+          "idPedido": {
+            "type": "integer",
+            "example": 123
+          },
+          "idCliente": {
+            "type": "integer",
+            "example": 45
+          },
+          "pesoTotal": {
+            "type": "number",
+            "example": 500
+          },
+          "direccion_entrega": {
+            "type": "string",
+            "example": "Calle Principal 123, Apartado 4A"
+          }
+        }
+      },
+      "RutaAsignadaEvent": {
+        "type": "object",
+        "description": "Evento de salida publicado por Logística cuando el pedido queda asignado a una ruta.",
+        "required": ["idPedido", "idRuta", "fecha_despacho"],
+        "properties": {
+          "idPedido": {
+            "type": "integer",
+            "example": 123
+          },
+          "idRuta": {
+            "type": "integer",
+            "example": 67
+          },
+          "fecha_despacho": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-03-14"
+          }
+        }
+      },
+      "ErrorSolicitudRutaEvent": {
+        "type": "object",
+        "description": "Evento de salida publicado por Logística cuando la solicitud no puede ser procesada.",
+        "required": ["codigo", "mensaje"],
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "example": "ERROR_SOLICITUD_RUTA"
+          },
+          "mensaje": {
+            "type": "string",
+            "example": "Peso total inválido o datos incompletos en la solicitud de ruta"
+          }
+        }
+      },
+      "RutaDTO": {
+        "type": "object",
+        "description": "DTO opcional de ruta para el event publisher, reutilizable si se requiere exponer más detalles de la ruta asignada.",
+        "properties": {
+          "idRuta": { "type": "integer", "example": 67 },
+          "estado": { "type": "string", "example": "CERRADA" },
+          "capacidadUtilizada": { "type": "number", "example": 950 },
+          "fecha_despacho": { "type": "string", "format": "date", "example": "2026-03-14" }
+        }
+      }
+    }
+  },
+  "x-event-contracts": {
+    "description": "Contratos de eventos asíncronos entre Inventario y Logística.",
+    "ingress": {
+      "SolicitudRutaRequerida": {
+        "eventName": "SolicitudRutaRequerida",
+        "destination": "solicitud-ruta.request",
+        "schema": {
+          "$ref": "#/components/schemas/SolicitudRutaRequeridaEvent"
+        }
+      }
+    },
+    "egress": {
+      "RutaAsignada": {
+        "eventName": "RutaAsignada",
+        "destination": "ruta-asignada.response",
+        "schema": {
+          "$ref": "#/components/schemas/RutaAsignadaEvent"
+        }
+      },
+      "ErrorSolicitudRuta": {
+        "eventName": "ErrorSolicitudRuta",
+        "destination": "error-solicitud-ruta.response",
+        "schema": {
+          "$ref": "#/components/schemas/ErrorSolicitudRutaEvent"
+        }
+      }
+    }
+  },
+  "x-requirements": {
+    "FR-001": "Recibir solicitudes de ruta de Inventario mediante evento asíncrono.",
+    "FR-002": "Procesar la solicitud con idPedido, idCliente, pesoTotal y dirección de entrega.",
+    "FR-003": "Asignar el pedido a una ruta existente si hay capacidad disponible.",
+    "FR-004": "Crear una nueva ruta cuando no exista ninguna ruta con capacidad disponible.",
+    "FR-005": "Publicar evento RutaAsignada con idPedido, idRuta y fecha_despacho.",
+    "FR-006": "Publicar evento ErrorSolicitudRuta cuando el procesamiento falle.",
+    "FR-007": "Marcar la ruta como cerrada cuando la carga alcance el 95% de capacidad."
+  },
+  "x-domain-model": {
+    "description": "Modelo de dominio y puertos de la feature, alineado al plan de arquitectura hexagonal.",
+    "entities": {
+      "Ruta": {
+        "description": "Ruta de entrega con lista de paradas, pedidos y vehículo asignado.",
+        "fields": {
+          "idRuta": "Integer — identificador único de la ruta",
+          "paradas": "List<Parada> — paradas asignadas a la ruta",
+          "pedidos": "List<Pedido> — pedidos asignados a la ruta",
+          "idVehiculo": "Integer — vehículo asignado",
+          "fechaDespacho": "LocalDate — fecha de despacho de la ruta",
+          "estado": "EstadoRuta — DISPONIBLE | CERRADA",
+          "capacidadUtilizada": "CapacidadCarga — capacidad actualmente utilizada"
+        }
+      },
+      "Pedido": {
+        "description": "Documento de entrega con peso y dirección.",
+        "fields": {
+          "idPedido": "Integer — identificador único del pedido",
+          "idCliente": "Integer — identificador del cliente",
+          "pesoTotal": "PesoTotal — carga total del pedido",
+          "direccionEntrega": "String — dirección de entrega"
+        }
+      }
+    },
+    "ports": {
+      "in": {
+        "ProcesarSolicitudRutaUseCase": {
+          "method": "Ruta procesar(SolicitudRuta solicitud)",
+          "description": "Puerto de entrada que recibe la solicitud de ruta y retorna la ruta asignada en dominio."
+        }
+      },
+      "out": {
+        "RutaRepository": {
+          "description": "Repositorio de rutas para búsqueda, persistencia y actualización de rutas existentes."
+        },
+        "ParadaRepository": {
+          "description": "Repositorio de paradas para persistir la secuencia de entregas."
+        },
+        "VehiculoRepository": {
+          "description": "Repositorio de vehículos para validar capacidad y disponibilidad."
+        },
+        "PedidoRepository": {
+          "description": "Repositorio de pedidos para persistir la solicitud y vincularla a la ruta."
+        },
+        "EventPublisher": {
+          "description": "Puerto de salida para publicar eventos de respuesta en RabbitMQ."
+        }
+      }
+    },
+    "exceptions": {
+      "CapacidadExcedidaException": {
+        "descripcion": "Se lanza cuando el pedido no puede caber en la ruta disponible actual.",
+        "httpStatus": "N/A — evento de error"
+      },
+      "VehiculoNoDisponibleException": {
+        "descripcion": "Se lanza cuando no hay vehículos disponibles para asignar una ruta.",
+        "httpStatus": "N/A — evento de error"
+      },
+      "LogisticaException": {
+        "descripcion": "Error genérico de dominio para el módulo de logística.",
+        "httpStatus": "N/A — evento de error"
+      }
+    },
+    "valueObjects": {
+      "PesoTotal": {
+        "descripcion": "Valor de dominio para peso del pedido en kilogramos.",
+        "validacion": "Debe ser mayor que 0."
+      },
+      "CapacidadCarga": {
+        "descripcion": "Valor de dominio para la capacidad de carga de una ruta o vehículo.",
+        "validacion": "Debe ser mayor que 0."
+      },
+      "TipoVehiculo": {
+        "descripcion": "Enum reutilizado para clasificar vehículos.",
+        "valores": ["CAMIONETA_URBANA", "CAMION_SENCILLO", "TRACTOCAMION_REGIONAL"]
+      },
+      "EstadoRuta": {
+        "descripcion": "Enum de estado de ruta.",
+        "valores": ["DISPONIBLE", "CERRADA"]
+      },
+      "EstadoParada": {
+        "descripcion": "Enum de estado de parada.",
+        "valores": ["PENDIENTE", "COMPLETADA"]
+      }
+    }
+  },
+  "x-infrastructure": {
+    "description": "Componentes de infraestructura y adaptadores necesarios para la feature.",
+    "adapters": {
+      "in": {
+        "SolicitudRutaEventListener": {
+          "descripcion": "Listener de Spring Cloud Stream que consume el evento SolicitudRutaRequerida y transforma el DTO a dominio.",
+          "queue": "solicitud-ruta.request"
+        }
+      },
+      "out": {
+        "EventPublisherAdapter": {
+          "descripcion": "Publica eventos RutaAsignada o ErrorSolicitudRuta a RabbitMQ.",
+          "destinations": ["ruta-asignada.response", "error-solicitud-ruta.response"]
+        }
+      }
+    },
+    "mapper": {
+      "SolicitarMapper": {
+        "tipo": "MapStruct @Component",
+        "descripcion": "Convierte entre DTOs de evento y objetos de dominio. Viene en infrastructure/mapper/.",
+        "conversaciones": ["SolicitudRutaRequeridaEvent → SolicitudRutaDominio", "Ruta → RutaAsignadaEvent", "Error → ErrorSolicitudRutaEvent"]
+      }
+    },
+    "dtos": {
+      "SolicitudRutaRequeridaEvent": {
+        "ubicacion": "infrastructure/messaging/dto/",
+        "descripcion": "DTO de evento de entrada"
+      },
+      "RutaAsignadaEvent": {
+        "ubicacion": "infrastructure/messaging/dto/",
+        "descripcion": "DTO de evento de salida"
+      },
+      "ErrorSolicitudRutaEvent": {
+        "ubicacion": "infrastructure/messaging/dto/",
+        "descripcion": "DTO de evento de error"
+      }
+    },
+    "config": {
+      "StreamConfig": {
+        "descripcion": "Configuración de Spring Cloud Stream para bindings de RabbitMQ.",
+        "perfil": ["dev", "test", "prod"]
+      }
+    }
+  },
+  "x-acceptance-scenarios": {
+    "description": "Escenarios de aceptación basados en el spec de Solicitar Ruta.",
+    "scenarios": {
+      "SC1": {
+        "titulo": "Asignar a ruta existente con capacidad",
+        "given": "Existe un evento SolicitudRutaRequerida con un pedido y una ruta que tiene capacidad disponible.",
+        "when": "El módulo procesa la solicitud asincrónicamente.",
+        "then": "El pedido se asigna a la ruta existente y se publica RutaAsignada con idRuta y fecha_despacho."
+      },
+      "SC2": {
+        "titulo": "Crear nueva ruta cuando no hay capacidad",
+        "given": "No existe ruta con capacidad disponible para el pedido.",
+        "when": "El módulo procesa la solicitud asincrónicamente.",
+        "then": "Se crea una nueva ruta y se publica RutaAsignada con el idRuta de la nueva ruta."
+      },
+      "SC3": {
+        "titulo": "Cerrar ruta al alcanzar el 95% de capacidad",
+        "given": "La asignación del pedido incrementa la carga de la ruta hasta al menos 95%.",
+        "when": "El módulo procesa la solicitud asincrónicamente.",
+        "then": "Se marca la ruta como cerrada y se publica RutaAsignada."
+      }
+    },
+    "edgeCases": {
+      "capacidadExacta": {
+        "descripcion": "Si la capacidad restante es exactamente igual al pesoTotal, la solicitud se asigna y la ruta se cierra.",
+        "resultado": "RutaAsignada con estado cerrado."
+      },
+      "pesoMayorCapacidadMaxima": {
+        "descripcion": "Si el pesoTotal supera la capacidad máxima de una ruta, se crea una nueva ruta.",
+        "resultado": "RutaAsignada con nueva ruta creada."
+      },
+      "datosInvalidos": {
+        "descripcion": "Si el evento llega con datos incompletos o inválidos, se publica ErrorSolicitudRuta.",
+        "resultado": "ErrorSolicitudRuta con descripción del error."
+      }
+    }
+  },
+  "x-success-criteria": {
+    "SC-001": "Exactitud en la asignación: 100% de las solicitudes procesadas correctamente con RutaAsignada.",
+    "SC-002": "Integridad de datos: 100% de los pedidos asignados tienen una ruta válida y el evento RutaAsignada incluye idPedido, idRuta y fecha_despacho."
+  }
+}
