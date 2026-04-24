@@ -35,4 +35,10 @@ public class RouteRepositoryAdapter implements RouteRepository {
     public Optional<Route> findById(Long routeId) {
         return springRepository.findById(routeId).map(mapper::toRoute);
     }
+
+    @Override
+    public Optional<Route> findByIdAndCarrierId(Long routeId, Long carrierId) {
+        return springRepository.findByRouteIdAndCarrierId(routeId, carrierId)
+                .map(mapper::toRoute);
+    }
 }

@@ -35,4 +35,7 @@ public class StopJpaEntity {
 
     @Column(name = "delivery_date")
     private LocalDate deliveryDate;
+
+    @Column(name = "customer_contact")
+    private String customerContact;
 }

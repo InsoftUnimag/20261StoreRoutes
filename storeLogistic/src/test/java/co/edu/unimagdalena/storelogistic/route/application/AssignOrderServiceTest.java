@@ -45,7 +45,7 @@ class AssignOrderServiceTest {
                 RouteCapacity.of(1_500.0), BigDecimal.valueOf(700),
                 RouteStatus.AVAILABLE, LocalDate.now(), List.of());
 
-        savedStop = Stop.reconstitute(99L, 10L, 1L, 1, "Calle Test", StopStatus.PENDING, null);
+        savedStop = Stop.reconstitute(99L, 10L, 1L, 1, "Calle Test", StopStatus.PENDING, null, null);
     }
 
     // ── SC1: Assign to existing route ──────────────────────────────────────────

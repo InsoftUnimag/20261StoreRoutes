@@ -8,4 +8,6 @@ import java.util.List;
 public interface StopSpringRepository extends JpaRepository<StopJpaEntity, Long> {
 
     List<StopJpaEntity> findByRouteIdOrderBySequence(Long routeId);
+
+    java.util.Optional<StopJpaEntity> findByStopIdAndRouteId(Long stopId, Long routeId);
 }

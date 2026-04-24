@@ -12,4 +12,6 @@ public interface RouteRepository {
     Route save(Route route);
 
     Optional<Route> findById(Long routeId);
+
+    Optional<Route> findByIdAndCarrierId(Long routeId, Long carrierId);
 }

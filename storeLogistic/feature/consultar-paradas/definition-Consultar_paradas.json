@@ -1,0 +1,237 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StoreLogistic — Consultar Paradas",
+    "description": "Endpoints para que el transportista consulte las paradas asignadas a su ruta. La autorización se resuelve verificando que la ruta esté asignada a un vehículo cuyo id_transportista coincide con el carrierId proporcionado. El rechazo (403) es idéntico para ruta inexistente y ruta de otro transportista.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://localhost:8080/api/v1", "description": "Local" }
+  ],
+  "paths": {
+    "/logistics/routes/{routeId}/stops": {
+      "get": {
+        "summary": "Listar paradas de una ruta",
+        "description": "Retorna la lista de paradas ordenadas por sequence ASC, sin llamadas al módulo financiero. Solo accesible si la ruta está asignada al vehículo del transportista (carrierId = id_transportista del vehículo).",
+        "operationId": "listStops",
+        "tags": ["Consultar Paradas"],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "description": "ID de la ruta a consultar",
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          },
+          {
+            "name": "carrierId",
+            "in": "query",
+            "required": true,
+            "description": "id_transportista del conductor (BIGINT del módulo de flota)",
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de paradas obtenida correctamente",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/QueryStopsResponse" },
+                "examples": {
+                  "conParadas": {
+                    "summary": "Ruta con 2 paradas",
+                    "value": {
+                      "routeId": 1,
+                      "carrierId": 42,
+                      "totalStops": 2,
+                      "stops": [
+                        { "idStop": 10, "sequence": 1, "deliveryAddress": "Calle 10 #20-30", "orderId": 5, "status": "PENDING" },
+                        { "idStop": 11, "sequence": 2, "deliveryAddress": "Carrera 5 #15-20", "orderId": 6, "status": "PENDING" }
+                      ]
+                    }
+                  },
+                  "sinParadas": {
+                    "summary": "Ruta sin paradas",
+                    "value": {
+                      "routeId": 1,
+                      "carrierId": 42,
+                      "totalStops": 0,
+                      "stops": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetro faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "codigo": "PARAMETRO_REQUERIDO",
+                  "mensaje": "Parámetro requerido: carrierId",
+                  "timestamp": "2026-04-24T14:00:00"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado. Se retorna 403 tanto si la ruta no existe como si pertenece a otro transportista (respuesta intencionalmente ambigua).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "codigo": "ACCESO_DENEGADO",
+                  "mensaje": "Acceso denegado",
+                  "timestamp": "2026-04-24T14:00:00"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logistics/routes/{routeId}/stops/{stopId}": {
+      "get": {
+        "summary": "Ver detalle de una parada",
+        "description": "Retorna el detalle completo de una parada, incluyendo el método de pago y el total a cobrar consultados al Módulo Financiero. Para CARTERA_COMERCIAL, totalACobrar es null (el conductor no cobra). Para CONTRA_ENTREGA, totalACobrar contiene el monto exacto.",
+        "operationId": "getStopDetail",
+        "tags": ["Consultar Paradas"],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "description": "ID de la ruta",
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          },
+          {
+            "name": "stopId",
+            "in": "path",
+            "required": true,
+            "description": "ID de la parada",
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          },
+          {
+            "name": "carrierId",
+            "in": "query",
+            "required": true,
+            "description": "id_transportista del conductor",
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle de la parada obtenido correctamente",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StopDetailDTO" },
+                "examples": {
+                  "contraEntrega": {
+                    "summary": "CONTRA_ENTREGA — el conductor debe cobrar",
+                    "value": {
+                      "idStop": 10,
+                      "sequence": 1,
+                      "deliveryAddress": "Calle 10 #20-30",
+                      "orderId": 5,
+                      "customerContact": "3001234567",
+                      "paymentMethod": "CONTRA_ENTREGA",
+                      "totalACobrar": 150000.00,
+                      "status": "PENDING"
+                    }
+                  },
+                  "carteraComercial": {
+                    "summary": "CARTERA_COMERCIAL — el conductor NO cobra",
+                    "value": {
+                      "idStop": 11,
+                      "sequence": 2,
+                      "deliveryAddress": "Carrera 5 #15-20",
+                      "orderId": 6,
+                      "customerContact": "3009876543",
+                      "paymentMethod": "CARTERA_COMERCIAL",
+                      "totalACobrar": null,
+                      "status": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetro faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado — ruta no asignada al transportista, ruta inexistente, o parada que no pertenece a la ruta",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "codigo": "ACCESO_DENEGADO",
+                  "mensaje": "Acceso denegado",
+                  "timestamp": "2026-04-24T14:00:00"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StopSummaryDTO": {
+        "type": "object",
+        "description": "Resumen de parada para la lista — sin datos de pago",
+        "properties": {
+          "idStop":          { "type": "integer", "format": "int64" },
+          "sequence":        { "type": "integer" },
+          "deliveryAddress": { "type": "string" },
+          "orderId":         { "type": "integer", "format": "int64" },
+          "status":          { "type": "string", "enum": ["PENDING", "DELIVERED", "REJECTED"] }
+        }
+      },
+      "StopDetailDTO": {
+        "type": "object",
+        "description": "Detalle completo de una parada, incluye método de pago del Módulo Financiero",
+        "properties": {
+          "idStop":          { "type": "integer", "format": "int64" },
+          "sequence":        { "type": "integer" },
+          "deliveryAddress": { "type": "string" },
+          "orderId":         { "type": "integer", "format": "int64" },
+          "customerContact": { "type": "string", "nullable": true },
+          "paymentMethod":   { "type": "string", "enum": ["CONTRA_ENTREGA", "CARTERA_COMERCIAL"] },
+          "totalACobrar":    {
+            "type": "number",
+            "format": "double",
+            "nullable": true,
+            "description": "Monto a cobrar. null para CARTERA_COMERCIAL — el frontend debe mostrar 'No cobrar', nunca '$0'."
+          },
+          "status":          { "type": "string", "enum": ["PENDING", "DELIVERED", "REJECTED"] }
+        }
+      },
+      "QueryStopsResponse": {
+        "type": "object",
+        "properties": {
+          "routeId":    { "type": "integer", "format": "int64" },
+          "carrierId":  { "type": "integer", "format": "int64" },
+          "totalStops": { "type": "integer" },
+          "stops":      { "type": "array", "items": { "$ref": "#/components/schemas/StopSummaryDTO" } }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "codigo":    { "type": "string" },
+          "mensaje":   { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

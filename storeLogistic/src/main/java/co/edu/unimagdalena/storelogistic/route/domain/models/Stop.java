@@ -14,6 +14,7 @@ public class Stop {
     private String deliveryAddress;
     private StopStatus status;
     private LocalDate deliveryDate;
+    private String customerContact;
 
     private Stop() {}
 
@@ -28,7 +29,8 @@ public class Stop {
     }
 
     public static Stop reconstitute(Long stopId, Long routeId, Long orderId, int sequence,
-                                    String deliveryAddress, StopStatus status, LocalDate deliveryDate) {
+                                    String deliveryAddress, StopStatus status, LocalDate deliveryDate,
+                                    String customerContact) {
         Stop stop = new Stop();
         stop.stopId          = stopId;
         stop.routeId         = routeId;
@@ -37,6 +39,7 @@ public class Stop {
         stop.deliveryAddress = deliveryAddress;
         stop.status          = status;
         stop.deliveryDate    = deliveryDate;
+        stop.customerContact = customerContact;
         return stop;
     }
 
@@ -60,6 +63,7 @@ public class Stop {
     public String deliveryAddress(){ return deliveryAddress; }
     public StopStatus status()     { return status; }
     public LocalDate deliveryDate(){ return deliveryDate; }
+    public String customerContact(){ return customerContact; }
 
     public void setStopId(Long stopId) { this.stopId = stopId; }
 }
