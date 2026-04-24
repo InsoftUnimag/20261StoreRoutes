@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Getter
 @Builder
 @NoArgsConstructor
@@ -12,4 +14,5 @@ import lombok.NoArgsConstructor;
 public class PaymentMethodResponse {
     private Long orderId;
     private String paymentMethod;
+    private BigDecimal totalPedido;
 }

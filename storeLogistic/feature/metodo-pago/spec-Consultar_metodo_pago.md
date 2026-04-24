@@ -14,15 +14,15 @@ Yo como módulo de Logística de Despacho y Distribución consulto el método de
 
 **Acceptance Scenarios**:
 
-1. **Scenario**: Consulta exitosa retorna CONTRA_ENTREGA
+1. **Scenario**: Consulta exitosa retorna CONTRA_ENTREGA con total del pedido
    - **Given** existe un pedido con forma_pago = CONTRA_ENTREGA
    - **When** se envía GET /api/v1/pedidos/{id_pedido}/forma-pago
-   - **Then** se retorna {id_pedido, forma_pago: "CONTRA_ENTREGA"}
-   
-2. **Scenario**: Consulta exitosa retorna CARTERA_COMERCIAL
+   - **Then** se retorna {id_pedido, forma_pago: "CONTRA_ENTREGA", total_pedido: 150000.00}
+
+2. **Scenario**: Consulta exitosa retorna CARTERA_COMERCIAL con total nulo
    - **Given** existe un pedido con forma_pago = CARTERA_COMERCIAL
    - **When** se envía GET /api/v1/pedidos/{id_pedido}/forma-pago
-   - **Then** se retorna {id_pedido, forma_pago: "CARTERA_COMERCIAL"}
+   - **Then** se retorna {id_pedido, forma_pago: "CARTERA_COMERCIAL", total_pedido: null}
 
 3. **Scenario**: Error cuando el pedido no existe
    - **Given** se consulta con un idPedido que no existe
@@ -47,7 +47,7 @@ Yo como módulo de Logística de Despacho y Distribución consulto el método de
 
 - **FR-001**: System MUST [enviar GET request al Módulo Financiero con endpoint /api/v1/pedidos/{id_pedido}/forma-pago usando solo el idPedido.]
 
-- **FR-002**: System MUST [procesar la respuesta del Módulo Financiero que retorna {id_pedido, forma_pago} con forma_pago = CONTRA_ENTREGA o CARTERA_COMERCIAL.]
+- **FR-002**: System MUST [procesar la respuesta del Módulo Financiero que retorna {id_pedido, forma_pago, total_pedido} donde forma_pago = CONTRA_ENTREGA o CARTERA_COMERCIAL, y total_pedido es el monto liquidado para CONTRA_ENTREGA o null para CARTERA_COMERCIAL.]
 
 - **FR-003**: System MUST [manejar errores del Módulo Financiero: "Pedido no encontrado" o "El cliente no tiene forma de pago registrada".]
 
@@ -59,8 +59,10 @@ Yo como módulo de Logística de Despacho y Distribución consulto el método de
 - **[Pedido]**: Documento de entrega. Atributos: idPedido, idCliente, forma_pago.
 
 - **[Forma de Pago]**: Método de pago del cliente. Valores válidos:
-  * `CONTRA_ENTREGA`: Pago al momento de la entrega
-  * `CARTERA_COMERCIAL`: Crédito comercial (sin pago en entrega)
+  * `CONTRA_ENTREGA`: Pago al momento de la entrega — incluye total_pedido en la respuesta.
+  * `CARTERA_COMERCIAL`: Crédito comercial (sin pago en entrega) — total_pedido es null.
+
+- **[Total del Pedido]**: Monto a cobrar en entrega (`total_pedido`). Solo aplica para CONTRA_ENTREGA. Proviene del campo `monto_liquidado` de la tabla `liquidacion_cliente` del Módulo Financiero.
 
 ### Request/Response Contract
 
@@ -69,11 +71,21 @@ Yo como módulo de Logística de Despacho y Distribución consulto el método de
 GET /api/v1/pedidos/{id_pedido}/forma-pago
 ```
 
-**Success Response (HTTP 200)**:
+**Success Response (HTTP 200) — CONTRA_ENTREGA**:
 ```json
 {
   "id_pedido": 123,
-  "forma_pago": "CONTRA_ENTREGA"
+  "forma_pago": "CONTRA_ENTREGA",
+  "total_pedido": 150000.00
+}
+```
+
+**Success Response (HTTP 200) — CARTERA_COMERCIAL**:
+```json
+{
+  "id_pedido": 123,
+  "forma_pago": "CARTERA_COMERCIAL",
+  "total_pedido": null
 }
 ```
 

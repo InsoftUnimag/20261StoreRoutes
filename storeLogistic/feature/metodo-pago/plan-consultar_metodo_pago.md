@@ -140,15 +140,15 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 **⚠️ CRITICAL**: No scenario implementation should begin until this phase is complete.
 
 - [ ] T007 Crear `PaymentMethod.java` — enum: `CONTRA_ENTREGA | CARTERA_COMERCIAL`. Sin anotaciones de framework. Método `static fromString(String value): PaymentMethod` — retorna el valor correspondiente; lanza `IllegalArgumentException` si el valor no es reconocido.
-- [ ] T008 Crear `OrderPaymentMethod.java` — modelo de dominio: `orderId (Long)`, `paymentMethod (PaymentMethod)`. Inmutable (sin setters). Sin anotaciones JPA ni de Spring. Constructor canónico y método de fábrica `static of(Long orderId, PaymentMethod paymentMethod): OrderPaymentMethod`.
+- [ ] T008 Crear `OrderPaymentMethod.java` — modelo de dominio: `orderId (Long)`, `paymentMethod (PaymentMethod)`, `totalPedido (BigDecimal, nullable)`. Inmutable (sin setters). Sin anotaciones JPA ni de Spring. Constructor canónico y método de fábrica `static of(Long orderId, PaymentMethod paymentMethod, BigDecimal totalPedido): OrderPaymentMethod`. `totalPedido` es null para CARTERA_COMERCIAL y tiene valor para CONTRA_ENTREGA.
 - [ ] T009 Crear `LogisticsException.java` — excepción base runtime. Reutilizar del módulo si ya existe.
 - [ ] T010 Crear `OrderNotFoundException.java` — extiende `LogisticsException`. Mensaje: `"Pedido no encontrado"` (coincide exactamente con la respuesta del Módulo Financiero según la spec).
 - [ ] T011 Crear `PaymentMethodNotRegisteredException.java` — extiende `LogisticsException`. Mensaje: `"El cliente no tiene forma de pago registrada"`.
 - [ ] T012 Crear `FinanceServiceUnavailableException.java` — extiende `LogisticsException`. Se lanza cuando se agotan los 3 reintentos sin respuesta exitosa del Módulo Financiero.
 - [ ] T013 Crear puerto de entrada `ConsultPaymentMethodUseCase.java` en `domain/ports/in/` — firma: `OrderPaymentMethod consult(Long orderId)`. Recibe y retorna exclusivamente objetos de dominio.
 - [ ] T014 Crear puerto de salida `FinanceGatewayPort.java` en `domain/ports/out/` — firma: `OrderPaymentMethod findByOrderId(Long orderId)`. El dominio define la abstracción; la infraestructura la implementa.
-- [ ] T015 Crear `FinancePaymentMethodResponse.java` en `infrastructure/web/dto/` — DTO para deserializar la respuesta JSON del Módulo Financiero: `Long id_pedido`, `String forma_pago`. Solo vive en infraestructura.
-- [ ] T016 Crear `PaymentMethodResponse.java` en `infrastructure/web/dto/` — DTO de respuesta HTTP del endpoint interno: `Long orderId`, `String paymentMethod`. Solo vive en infraestructura.
+- [ ] T015 Crear `FinancePaymentMethodResponse.java` en `infrastructure/web/dto/` — DTO para deserializar la respuesta JSON del Módulo Financiero: `Long id_pedido`, `String forma_pago`, `BigDecimal total_pedido` (nullable). Solo vive en infraestructura.
+- [ ] T016 Crear `PaymentMethodResponse.java` en `infrastructure/web/dto/` — DTO de respuesta HTTP del endpoint interno: `Long orderId`, `String paymentMethod`, `BigDecimal totalPedido` (nullable). Solo vive en infraestructura.
 - [ ] T017 Crear `PaymentMethodMapper.java` en `infrastructure/mapper/` como MapStruct `@Component` — conversiones: `OrderPaymentMethod → PaymentMethodResponse`, `FinancePaymentMethodResponse → OrderPaymentMethod`.
 - [ ] T018 Crear `GlobalExceptionHandler.java` — reutilizar del módulo, agregar mappings:
   - `OrderNotFoundException` → HTTP 404 con mensaje de la excepción.
@@ -171,8 +171,8 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 
 ### Tests for Scenario 1
 
-- [ ] T022 [P] [SC1] Contract test in `PaymentMethodApiContractTest` — `GET /api/v1/pedidos/{id_pedido}/forma-pago` with a valid `orderId` whose stub returns `CONTRA_ENTREGA` → HTTP 200, body contains `orderId` and `paymentMethod: "CONTRA_ENTREGA"` (FR-001, FR-002, SC-001, SC-003).
-- [ ] T023 [P] [SC1] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/1/forma-pago` → 200 `{"id_pedido":1,"forma_pago":"CONTRA_ENTREGA"}`; verify `FinanceModuleClient.findByOrderId(1L)` returns `OrderPaymentMethod` with `paymentMethod = CONTRA_ENTREGA`.
+- [ ] T022 [P] [SC1] Contract test in `PaymentMethodApiContractTest` — `GET /api/v1/pedidos/{id_pedido}/forma-pago` with a valid `orderId` whose stub returns `CONTRA_ENTREGA` → HTTP 200, body contains `orderId`, `paymentMethod: "CONTRA_ENTREGA"` y `totalPedido: 150000.00` (FR-001, FR-002, SC-001, SC-003).
+- [ ] T023 [P] [SC1] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/1/forma-pago` → 200 `{"id_pedido":1,"forma_pago":"CONTRA_ENTREGA","total_pedido":150000.00}`; verify `FinanceModuleClient.findByOrderId(1L)` returns `OrderPaymentMethod` with `paymentMethod = CONTRA_ENTREGA` y `totalPedido = 150000.00`.
 
 ### Implementation for Scenario 1
 
@@ -213,8 +213,8 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 
 ### Tests for Scenario 2
 
-- [ ] T031 [P] [SC2] Contract test in `PaymentMethodApiContractTest` — `GET /api/v1/pedidos/{id_pedido}/forma-pago` with stub returning `CARTERA_COMERCIAL` → HTTP 200, body contains `orderId` and `paymentMethod: "CARTERA_COMERCIAL"` (FR-002, SC-001, SC-003).
-- [ ] T032 [P] [SC2] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/2/forma-pago` → 200 `{"id_pedido":2,"forma_pago":"CARTERA_COMERCIAL"}`; verify `FinanceModuleClient.findByOrderId(2L)` returns `OrderPaymentMethod` with `paymentMethod = CARTERA_COMERCIAL`.
+- [ ] T031 [P] [SC2] Contract test in `PaymentMethodApiContractTest` — `GET /api/v1/pedidos/{id_pedido}/forma-pago` with stub returning `CARTERA_COMERCIAL` → HTTP 200, body contains `orderId`, `paymentMethod: "CARTERA_COMERCIAL"` y `totalPedido: null` (FR-002, SC-001, SC-003).
+- [ ] T032 [P] [SC2] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/2/forma-pago` → 200 `{"id_pedido":2,"forma_pago":"CARTERA_COMERCIAL","total_pedido":null}`; verify `FinanceModuleClient.findByOrderId(2L)` returns `OrderPaymentMethod` with `paymentMethod = CARTERA_COMERCIAL` y `totalPedido = null`.
 
 ### Implementation for Scenario 2
 

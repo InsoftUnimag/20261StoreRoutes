@@ -15,7 +15,7 @@
     "/pedidos/{id_pedido}/forma-pago": {
       "get": {
         "summary": "Consultar método de pago de un pedido",
-        "description": "Consulta de forma síncrona el método de pago de un pedido al Módulo Financiero, enviando únicamente el idPedido. Retorna si el pedido debe cobrarse en entrega (CONTRA_ENTREGA) o si el cliente tiene crédito comercial (CARTERA_COMERCIAL). Aplica reintentos con backoff exponencial ante fallos de conectividad (máximo 3 intentos).",
+        "description": "Consulta de forma síncrona el método de pago de un pedido al Módulo Financiero, enviando únicamente el idPedido. Retorna forma_pago y total_pedido en una sola llamada: para CONTRA_ENTREGA incluye el monto a cobrar en entrega; para CARTERA_COMERCIAL el total_pedido es null. Aplica reintentos con backoff exponencial ante fallos de conectividad (máximo 3 intentos).",
         "operationId": "consultPaymentMethod",
         "parameters": [
           {
@@ -41,17 +41,19 @@
                 },
                 "examples": {
                   "contra_entrega": {
-                    "summary": "Pedido con pago contra entrega",
+                    "summary": "Pedido con pago contra entrega — incluye total a cobrar",
                     "value": {
                       "orderId": 123,
-                      "paymentMethod": "CONTRA_ENTREGA"
+                      "paymentMethod": "CONTRA_ENTREGA",
+                      "totalPedido": 150000.00
                     }
                   },
                   "cartera_comercial": {
-                    "summary": "Pedido con cartera comercial",
+                    "summary": "Pedido con cartera comercial — total nulo",
                     "value": {
                       "orderId": 456,
-                      "paymentMethod": "CARTERA_COMERCIAL"
+                      "paymentMethod": "CARTERA_COMERCIAL",
+                      "totalPedido": null
                     }
                   }
                 }
@@ -122,7 +124,7 @@
     "schemas": {
       "PaymentMethodResponse": {
         "type": "object",
-        "description": "Respuesta de la consulta del método de pago de un pedido, retornada exactamente como la provee el Módulo Financiero.",
+        "description": "Respuesta de la consulta del método de pago de un pedido. Incluye forma_pago y total_pedido en una sola respuesta. total_pedido contiene el monto a cobrar en entrega para CONTRA_ENTREGA, o null para CARTERA_COMERCIAL.",
         "required": ["orderId", "paymentMethod"],
         "properties": {
           "orderId": {
@@ -136,6 +138,13 @@
             "description": "Método de pago del cliente para este pedido. CONTRA_ENTREGA indica pago al momento de la entrega; CARTERA_COMERCIAL indica crédito comercial sin pago en entrega.",
             "enum": ["CONTRA_ENTREGA", "CARTERA_COMERCIAL"],
             "example": "CONTRA_ENTREGA"
+          },
+          "totalPedido": {
+            "type": "number",
+            "format": "double",
+            "nullable": true,
+            "description": "Monto total a cobrar en entrega. Presente solo para CONTRA_ENTREGA (proviene de monto_liquidado en liquidacion_cliente). Null para CARTERA_COMERCIAL.",
+            "example": 150000.00
           }
         }
       },

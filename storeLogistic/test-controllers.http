@@ -1,0 +1,90 @@
+### ─── PAYMENT METHOD ─────────────────────────────────────────────────────────
+
+### SC1: CONTRA_ENTREGA — espera 200 con totalPedido: 150000.00
+GET http://localhost:8080/api/v1/pedidos/1/forma-pago
+Accept: application/json
+
+###
+
+### SC2: CARTERA_COMERCIAL — espera 200 con totalPedido: null
+GET http://localhost:8080/api/v1/pedidos/2/forma-pago
+Accept: application/json
+
+###
+
+### EC: Pedido no encontrado — espera 404 PEDIDO_NO_ENCONTRADO
+GET http://localhost:8080/api/v1/pedidos/404/forma-pago
+Accept: application/json
+
+###
+
+### EC: Sin forma de pago registrada — espera 422 FORMA_PAGO_NO_REGISTRADA
+GET http://localhost:8080/api/v1/pedidos/422/forma-pago
+Accept: application/json
+
+###
+
+### EC: Servicio financiero no disponible — espera 503 SERVICIO_FINANCIERO_NO_DISPONIBLE
+GET http://localhost:8080/api/v1/pedidos/503/forma-pago
+Accept: application/json
+
+###
+
+### EC: id no numérico — espera 400
+GET http://localhost:8080/api/v1/pedidos/abc/forma-pago
+Accept: application/json
+
+###
+
+### Default: orderId desconocido — espera 200 CONTRA_ENTREGA con totalPedido: 150000.00
+GET http://localhost:8080/api/v1/pedidos/99/forma-pago
+Accept: application/json
+
+###
+
+### ─── VEHICLES (Gestión de Flota) ────────────────────────────────────────────
+
+### Listar todos los vehículos
+GET http://localhost:8080/api/v1/vehicles
+Accept: application/json
+
+###
+
+### Listar vehículos por categoría y estado
+GET http://localhost:8080/api/v1/vehicles?category=CAMIONETA_URBANA&status=DISPONIBLE
+Accept: application/json
+
+###
+
+### Obtener vehículo por ID
+GET http://localhost:8080/api/v1/vehicles/1
+Accept: application/json
+
+###
+
+### Crear vehículo
+POST http://localhost:8080/api/v1/vehicles
+Content-Type: application/json
+
+{
+  "category": "CAMIONETA_URBANA",
+  "loadCapacity": 1000.0,
+  "transporterId": 1
+}
+
+###
+
+### Cambiar estado de vehículo
+PATCH http://localhost:8080/api/v1/vehicles/1/status
+Content-Type: application/json
+
+{
+  "newStatus": "DISPONIBLE"
+}
+
+###
+
+### Asignar transportista a vehículo
+POST http://localhost:8080/api/v1/logistics/vehicles/1/transporter
+
+###

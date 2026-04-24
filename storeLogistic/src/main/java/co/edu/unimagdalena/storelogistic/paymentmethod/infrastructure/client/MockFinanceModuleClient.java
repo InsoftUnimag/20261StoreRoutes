@@ -10,6 +10,7 @@ import co.edu.unimagdalena.storelogistic.paymentmethod.domain.values.PaymentMeth
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -22,8 +23,8 @@ import java.util.function.Supplier;
 public class MockFinanceModuleClient implements FinanceGatewayPort {
 
     private static final Map<Long, OrderPaymentMethod> HAPPY_PATHS = Map.of(
-            1L, OrderPaymentMethod.of(1L, PaymentMethod.CONTRA_ENTREGA),
-            2L, OrderPaymentMethod.of(2L, PaymentMethod.CARTERA_COMERCIAL)
+            1L, OrderPaymentMethod.of(1L, PaymentMethod.CONTRA_ENTREGA, new BigDecimal("150000.00")),
+            2L, OrderPaymentMethod.of(2L, PaymentMethod.CARTERA_COMERCIAL, null)
     );
 
     private static final Map<Long, Supplier<LogisticsException>> ERROR_CASES = Map.of(
@@ -42,6 +43,6 @@ public class MockFinanceModuleClient implements FinanceGatewayPort {
                 .ifPresent(ex -> { throw ex; });
 
         return Optional.ofNullable(HAPPY_PATHS.get(orderId))
-                .orElse(OrderPaymentMethod.of(orderId, PaymentMethod.CONTRA_ENTREGA));
+                .orElse(OrderPaymentMethod.of(orderId, PaymentMethod.CONTRA_ENTREGA, new BigDecimal("150000.00")));
     }
 }

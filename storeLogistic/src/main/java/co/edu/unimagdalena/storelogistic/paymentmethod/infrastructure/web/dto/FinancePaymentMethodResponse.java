@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,4 +17,7 @@ public class FinancePaymentMethodResponse {
 
     @JsonProperty("forma_pago")
     private String formaPago;
+
+    @JsonProperty("total_pedido")
+    private BigDecimal totalPedido;
 }

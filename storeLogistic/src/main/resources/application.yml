@@ -88,7 +88,7 @@ spring:
     activate:
       on-profile: test
   datasource:
-    url: jdbc:tc:postgresql:16:///storelogistic_test
+    url: jdbc:tc:postgresql:17.6-alpine3.22:///storelogistic_test
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
   flyway:
     validate-on-migrate: false
