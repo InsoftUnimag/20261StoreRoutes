@@ -65,6 +65,15 @@ logistics:
     service:
       url: ${TRANSPORTER_SERVICE_URL:http://localhost:8081/api/v1}
 
+finance:
+  module:
+    base-url: ${FINANCE_MODULE_BASE_URL:http://localhost:8082/api/v1}
+    timeout-ms: ${FINANCE_TIMEOUT_MS:3000}
+    retry:
+      max-attempts: ${FINANCE_RETRY_MAX_ATTEMPTS:3}
+      initial-interval-ms: ${FINANCE_RETRY_INITIAL_INTERVAL_MS:500}
+      multiplier: ${FINANCE_RETRY_MULTIPLIER:2.0}
+
 ---
 spring:
   config:
@@ -94,3 +103,9 @@ spring:
       on-profile: prod
   jpa:
     show-sql: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: stub
