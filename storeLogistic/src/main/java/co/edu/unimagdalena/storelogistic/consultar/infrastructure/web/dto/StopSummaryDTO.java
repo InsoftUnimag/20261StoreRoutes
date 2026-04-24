@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class StopDTO {
+public class StopSummaryDTO {
     private Long idStop;
     private int sequence;
     private String deliveryAddress;
-    private String customerContact;
+    private Long orderId;
     private String status;
 }

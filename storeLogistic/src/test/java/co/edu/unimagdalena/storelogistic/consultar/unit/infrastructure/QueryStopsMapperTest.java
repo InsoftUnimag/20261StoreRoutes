@@ -2,10 +2,11 @@ package co.edu.unimagdalena.storelogistic.consultar.unit.infrastructure;
 
 import co.edu.unimagdalena.storelogistic.consultar.infrastructure.mapper.QueryStopsMapperImpl;
 import co.edu.unimagdalena.storelogistic.consultar.infrastructure.web.dto.QueryStopsResponse;
-import co.edu.unimagdalena.storelogistic.consultar.infrastructure.web.dto.StopDTO;
+import co.edu.unimagdalena.storelogistic.consultar.infrastructure.web.dto.StopDetailDTO;
+import co.edu.unimagdalena.storelogistic.consultar.infrastructure.web.dto.StopSummaryDTO;
 import co.edu.unimagdalena.storelogistic.consultar.testdata.StopFixture;
+import co.edu.unimagdalena.storelogistic.paymentmethod.testdata.OrderPaymentMethodFixture;
 import co.edu.unimagdalena.storelogistic.route.domain.models.Stop;
-import co.edu.unimagdalena.storelogistic.route.domain.values.StopStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,27 +19,59 @@ class QueryStopsMapperTest {
     private final QueryStopsMapperImpl mapper = new QueryStopsMapperImpl();
 
     @Test
-    @DisplayName("toDTO → maps Stop fields to StopDTO correctly")
-    void toDTO_mapsAllFields() {
+    @DisplayName("toSummaryDTO → maps Stop fields correctly")
+    void toSummaryDTO_mapsAllFields() {
         Stop stop = StopFixture.standard();
 
-        StopDTO dto = mapper.toDTO(stop);
+        StopSummaryDTO dto = mapper.toSummaryDTO(stop);
 
         assertThat(dto.getIdStop()).isEqualTo(stop.stopId());
         assertThat(dto.getSequence()).isEqualTo(stop.sequence());
         assertThat(dto.getDeliveryAddress()).isEqualTo(stop.deliveryAddress());
-        assertThat(dto.getCustomerContact()).isEqualTo(stop.customerContact());
-        assertThat(dto.getStatus()).isEqualTo(StopStatus.PENDING.name());
+        assertThat(dto.getOrderId()).isEqualTo(stop.orderId());
+        assertThat(dto.getStatus()).isEqualTo("PENDING");
     }
 
     @Test
-    @DisplayName("toDTO → customerContact is null when not set")
-    void toDTO_withNullContact_mapsToNull() {
-        Stop stop = StopFixture.withRoute(1L, 1);
+    @DisplayName("toSummaryDTO → null stop returns null")
+    void toSummaryDTO_nullStop_returnsNull() {
+        assertThat(mapper.toSummaryDTO(null)).isNull();
+    }
 
-        StopDTO dto = mapper.toDTO(stop);
+    @Test
+    @DisplayName("toDetailDTO → CONTRA_ENTREGA includes totalACobrar and paymentMethod")
+    void toDetailDTO_contraEntrega_includesTotal() {
+        Stop stop = StopFixture.standard();
 
-        assertThat(dto.getCustomerContact()).isNull();
+        StopDetailDTO dto = mapper.toDetailDTO(stop, OrderPaymentMethodFixture.contraEntrega());
+
+        assertThat(dto.getIdStop()).isEqualTo(stop.stopId());
+        assertThat(dto.getCustomerContact()).isEqualTo(stop.customerContact());
+        assertThat(dto.getPaymentMethod()).isEqualTo("CONTRA_ENTREGA");
+        assertThat(dto.getTotalACobrar()).isEqualByComparingTo("150000.00");
+        assertThat(dto.getStatus()).isEqualTo("PENDING");
+    }
+
+    @Test
+    @DisplayName("toDetailDTO → CARTERA_COMERCIAL yields null totalACobrar")
+    void toDetailDTO_carteraComercial_totalACobrarIsNull() {
+        Stop stop = StopFixture.standard();
+
+        StopDetailDTO dto = mapper.toDetailDTO(stop, OrderPaymentMethodFixture.carteraComercial());
+
+        assertThat(dto.getPaymentMethod()).isEqualTo("CARTERA_COMERCIAL");
+        assertThat(dto.getTotalACobrar()).isNull();
+    }
+
+    @Test
+    @DisplayName("toDetailDTO → null payment yields null paymentMethod and totalACobrar")
+    void toDetailDTO_nullPayment_paymentFieldsAreNull() {
+        Stop stop = StopFixture.standard();
+
+        StopDetailDTO dto = mapper.toDetailDTO(stop, null);
+
+        assertThat(dto.getPaymentMethod()).isNull();
+        assertThat(dto.getTotalACobrar()).isNull();
     }
 
     @Test

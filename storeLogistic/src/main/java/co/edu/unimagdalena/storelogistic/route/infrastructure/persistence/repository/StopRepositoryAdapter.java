@@ -39,4 +39,10 @@ public class StopRepositoryAdapter implements StopRepository {
                 .map(mapper::toStop)
                 .toList();
     }
+
+    @Override
+    public java.util.Optional<Stop> findByIdAndRouteId(Long stopId, Long routeId) {
+        return springRepository.findByStopIdAndRouteId(stopId, routeId)
+                .map(mapper::toStop);
+    }
 }

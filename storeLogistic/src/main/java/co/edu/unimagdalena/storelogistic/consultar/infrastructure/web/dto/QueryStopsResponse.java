@@ -13,5 +13,5 @@ public class QueryStopsResponse {
     private Long routeId;
     private Long carrierId;
     private int totalStops;
-    private List<StopDTO> stops;
+    private List<StopSummaryDTO> stops;
 }
