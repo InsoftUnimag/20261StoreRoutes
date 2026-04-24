@@ -1,0 +1,169 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Interna - Consulta de Método de Pago",
+    "description": "Servicio interno para la consulta síncrona del método de pago de un pedido al Módulo Financiero (Módulo 2: Logística)",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "Servidor local de desarrollo"
+    }
+  ],
+  "paths": {
+    "/pedidos/{id_pedido}/forma-pago": {
+      "get": {
+        "summary": "Consultar método de pago de un pedido",
+        "description": "Consulta de forma síncrona el método de pago de un pedido al Módulo Financiero, enviando únicamente el idPedido. Retorna forma_pago y total_pedido en una sola llamada: para CONTRA_ENTREGA incluye el monto a cobrar en entrega; para CARTERA_COMERCIAL el total_pedido es null. Aplica reintentos con backoff exponencial ante fallos de conectividad (máximo 3 intentos).",
+        "operationId": "consultPaymentMethod",
+        "parameters": [
+          {
+            "name": "id_pedido",
+            "in": "path",
+            "required": true,
+            "description": "Identificador único del pedido cuyo método de pago se desea consultar.",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consulta exitosa — método de pago retornado correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodResponse"
+                },
+                "examples": {
+                  "contra_entrega": {
+                    "summary": "Pedido con pago contra entrega — incluye total a cobrar",
+                    "value": {
+                      "orderId": 123,
+                      "paymentMethod": "CONTRA_ENTREGA",
+                      "totalPedido": 150000.00
+                    }
+                  },
+                  "cartera_comercial": {
+                    "summary": "Pedido con cartera comercial — total nulo",
+                    "value": {
+                      "orderId": 456,
+                      "paymentMethod": "CARTERA_COMERCIAL",
+                      "totalPedido": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida — id_pedido ausente, no numérico o con valor inválido (cero o negativo)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "VALIDACION_FALLIDA",
+                  "mensaje": "El parámetro id_pedido debe ser un número entero positivo válido"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido no encontrado en el Módulo Financiero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "PEDIDO_NO_ENCONTRADO",
+                  "mensaje": "Pedido no encontrado"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El cliente asociado al pedido no tiene forma de pago registrada en el Módulo Financiero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "FORMA_PAGO_NO_REGISTRADA",
+                  "mensaje": "El cliente no tiene forma de pago registrada"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Módulo Financiero no disponible — se agotaron los 3 reintentos con backoff exponencial sin obtener respuesta exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "SERVICIO_FINANCIERO_NO_DISPONIBLE",
+                  "mensaje": "El Módulo Financiero no está disponible. Intente nuevamente más tarde."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PaymentMethodResponse": {
+        "type": "object",
+        "description": "Respuesta de la consulta del método de pago de un pedido. Incluye forma_pago y total_pedido en una sola respuesta. total_pedido contiene el monto a cobrar en entrega para CONTRA_ENTREGA, o null para CARTERA_COMERCIAL.",
+        "required": ["orderId", "paymentMethod"],
+        "properties": {
+          "orderId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador único del pedido consultado. Corresponde al id_pedido retornado por el Módulo Financiero.",
+            "example": 123
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "Método de pago del cliente para este pedido. CONTRA_ENTREGA indica pago al momento de la entrega; CARTERA_COMERCIAL indica crédito comercial sin pago en entrega.",
+            "enum": ["CONTRA_ENTREGA", "CARTERA_COMERCIAL"],
+            "example": "CONTRA_ENTREGA"
+          },
+          "totalPedido": {
+            "type": "number",
+            "format": "double",
+            "nullable": true,
+            "description": "Monto total a cobrar en entrega. Presente solo para CONTRA_ENTREGA (proviene de monto_liquidado en liquidacion_cliente). Null para CARTERA_COMERCIAL.",
+            "example": 150000.00
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Estructura estándar de error para respuestas no exitosas.",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "description": "Código de error de negocio.",
+            "example": "PEDIDO_NO_ENCONTRADO"
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Descripción legible del error.",
+            "example": "Pedido no encontrado"
+          }
+        }
+      }
+    }
+  }
+}

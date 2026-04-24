@@ -44,9 +44,9 @@ class VehicleTypeTest {
     }
 
     @Test
-    @DisplayName("URBAN_VAN maps to CAMIONETA category")
+    @DisplayName("URBAN_VAN maps to CAMIONETA_URBANA category")
     void urbanVan_mapsToCamioneta() {
-        assertThat(VehicleType.URBAN_VAN.categoryName()).isEqualTo("CAMIONETA");
+        assertThat(VehicleType.URBAN_VAN.categoryName()).isEqualTo("CAMIONETA_URBANA");
     }
 
     @Test
