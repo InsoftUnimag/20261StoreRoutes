@@ -8,16 +8,17 @@ import co.edu.unimagdalena.storelogistic.paymentmethod.domain.models.OrderPaymen
 import co.edu.unimagdalena.storelogistic.paymentmethod.domain.ports.out.FinanceGatewayPort;
 import co.edu.unimagdalena.storelogistic.paymentmethod.domain.values.PaymentMethod;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+/**
+ * Temporary mock — replace with FinanceModuleClient when the Finance Module is available.
+ */
 @Slf4j
 @Component
-@Profile("stub")
 public class FinanceModuleStub implements FinanceGatewayPort {
 
     private static final Map<Long, OrderPaymentMethod> HAPPY_PATHS = Map.of(

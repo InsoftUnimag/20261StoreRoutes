@@ -10,10 +10,8 @@ import co.edu.unimagdalena.storelogistic.paymentmethod.infrastructure.web.dto.Fi
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 
@@ -22,9 +20,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+/**
+ * Real HTTP adapter — wire this as @Component and remove FinanceModuleStub when the Finance Module is available.
+ */
 @Slf4j
-@Component
-@Profile("!stub")
 @RequiredArgsConstructor
 public class FinanceModuleClient implements FinanceGatewayPort {
 
