@@ -105,6 +105,95 @@ Accept: application/json
 
 ###
 
+### ─── ACTUALIZAR ESTADO DE PEDIDO ───────────────────────────────────────────
+
+### SC1: Entregado Completo — espera 200 con tasaEfectividad: 100
+PUT http://localhost:8080/api/v1/logistics/orders/1/status
+Content-Type: application/json
+
+{
+  "idTransportista": 1,
+  "estadoFinal": "Entregado Completo"
+}
+
+###
+
+### SC2: Rechazo Parcial — espera 200 con tasaEfectividad: 80
+PUT http://localhost:8080/api/v1/logistics/orders/1/status
+Content-Type: application/json
+
+{
+  "idTransportista": 1,
+  "estadoFinal": "Rechazo Parcial"
+}
+
+###
+
+### SC3: No Entregado — espera 200 con tasaEfectividad: 0 y alerta generada
+PUT http://localhost:8080/api/v1/logistics/orders/1/status
+Content-Type: application/json
+
+{
+  "idTransportista": 1,
+  "estadoFinal": "No Entregado"
+}
+
+###
+
+### SC4: Faltante de Inventario — espera 200 con tasaEfectividad: -100
+PUT http://localhost:8080/api/v1/logistics/orders/1/status
+Content-Type: application/json
+
+{
+  "idTransportista": 1,
+  "estadoFinal": "Faltante de Inventario"
+}
+
+###
+
+### EC: Estado inválido — espera 422 ESTADO_FINAL_INVALIDO
+PUT http://localhost:8080/api/v1/logistics/orders/1/status
+Content-Type: application/json
+
+{
+  "idTransportista": 1,
+  "estadoFinal": "EstadoInventado"
+}
+
+###
+
+### EC: Pedido no encontrado — espera 404 PEDIDO_NO_ENCONTRADO
+PUT http://localhost:8080/api/v1/logistics/orders/99999/status
+Content-Type: application/json
+
+{
+  "idTransportista": 1,
+  "estadoFinal": "Entregado Completo"
+}
+
+###
+
+### EC: Transportista no encontrado — espera 404 TRANSPORTISTA_NO_ENCONTRADO
+PUT http://localhost:8080/api/v1/logistics/orders/1/status
+Content-Type: application/json
+
+{
+  "idTransportista": 99999,
+  "estadoFinal": "Entregado Completo"
+}
+
+###
+
+### EC: Sin idTransportista — espera 400 VALIDACION_FALLIDA
+PUT http://localhost:8080/api/v1/logistics/orders/1/status
+Content-Type: application/json
+
+{
+  "estadoFinal": "Entregado Completo"
+}
+
+###
+
 ### ─── VEHICLES (Gestión de Flota) ────────────────────────────────────────────
 
 ### Listar todos los vehículos
