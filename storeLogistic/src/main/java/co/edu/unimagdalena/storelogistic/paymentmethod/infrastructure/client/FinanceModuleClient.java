@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * Real HTTP adapter — wire this as @Component and remove FinanceModuleStub when the Finance Module is available.
+ * Real HTTP adapter — wire this as @Component and remove MockFinanceModuleClient when the Finance Module is available.
  */
 @Slf4j
 @RequiredArgsConstructor

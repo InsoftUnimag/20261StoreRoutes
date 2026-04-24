@@ -19,7 +19,7 @@ import java.util.function.Supplier;
  */
 @Slf4j
 @Component
-public class FinanceModuleStub implements FinanceGatewayPort {
+public class MockFinanceModuleClient implements FinanceGatewayPort {
 
     private static final Map<Long, OrderPaymentMethod> HAPPY_PATHS = Map.of(
             1L, OrderPaymentMethod.of(1L, PaymentMethod.CONTRA_ENTREGA),
@@ -35,7 +35,7 @@ public class FinanceModuleStub implements FinanceGatewayPort {
 
     @Override
     public OrderPaymentMethod findByOrderId(Long orderId) {
-        log.info("[STUB] Resolving payment method for orderId={}", orderId);
+        log.info("[MOCK] Resolving payment method for orderId={}", orderId);
 
         Optional.ofNullable(ERROR_CASES.get(orderId))
                 .map(Supplier::get)
