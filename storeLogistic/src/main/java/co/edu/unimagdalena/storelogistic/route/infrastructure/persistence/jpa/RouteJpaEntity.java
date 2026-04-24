@@ -38,6 +38,9 @@ public class RouteJpaEntity {
     @Column(name = "dispatch_date", nullable = false)
     private LocalDate dispatchDate;
 
+    @Column(name = "id_carrier")
+    private Long carrierId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

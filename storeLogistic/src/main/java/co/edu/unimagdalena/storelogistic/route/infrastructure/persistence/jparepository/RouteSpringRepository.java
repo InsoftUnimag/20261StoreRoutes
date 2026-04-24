@@ -18,4 +18,6 @@ public interface RouteSpringRepository extends JpaRepository<RouteJpaEntity, Lon
             LIMIT 1
             """, nativeQuery = true)
     Optional<RouteJpaEntity> findBestAvailableWithCapacity(@Param("weightKg") BigDecimal weightKg);
+
+    Optional<RouteJpaEntity> findByRouteIdAndCarrierId(Long routeId, Long carrierId);
 }

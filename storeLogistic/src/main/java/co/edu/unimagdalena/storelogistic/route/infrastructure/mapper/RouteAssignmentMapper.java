@@ -41,7 +41,8 @@ public abstract class RouteAssignmentMapper {
                 e.getSequence(),
                 e.getDeliveryAddress(),
                 StopStatus.valueOf(e.getStatus()),
-                e.getDeliveryDate()
+                e.getDeliveryDate(),
+                e.getCustomerContact()
         );
     }
 
@@ -88,6 +89,7 @@ public abstract class RouteAssignmentMapper {
                 .deliveryAddress(s.deliveryAddress())
                 .status(s.status().name())
                 .deliveryDate(s.deliveryDate())
+                .customerContact(s.customerContact())
                 .build();
     }
 

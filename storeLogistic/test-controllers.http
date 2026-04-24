@@ -42,6 +42,38 @@ Accept: application/json
 
 ###
 
+### ─── CONSULTAR PARADAS ───────────────────────────────────────────────────────
+
+### SC1: Paradas de ruta asignada al transportista — espera 200 con lista ordenada
+GET http://localhost:8080/api/v1/logistics/routes/1/stops?carrierId=1
+Accept: application/json
+
+###
+
+### EC: Ruta no asignada al transportista — espera 403 ACCESO_DENEGADO
+GET http://localhost:8080/api/v1/logistics/routes/1/stops?carrierId=99
+Accept: application/json
+
+###
+
+### EC: Ruta inexistente — espera 403 (igual que no autorizado, no revela existencia)
+GET http://localhost:8080/api/v1/logistics/routes/99999/stops?carrierId=1
+Accept: application/json
+
+###
+
+### EC: Sin carrierId — espera 400 PARAMETRO_REQUERIDO
+GET http://localhost:8080/api/v1/logistics/routes/1/stops
+Accept: application/json
+
+###
+
+### EC: routeId no numérico — espera 400 PARAMETRO_INVALIDO
+GET http://localhost:8080/api/v1/logistics/routes/abc/stops?carrierId=1
+Accept: application/json
+
+###
+
 ### ─── VEHICLES (Gestión de Flota) ────────────────────────────────────────────
 
 ### Listar todos los vehículos

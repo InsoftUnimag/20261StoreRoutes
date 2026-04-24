@@ -9,4 +9,6 @@ public interface StopRepository {
     Stop save(Stop stop);
 
     List<Stop> findByRouteId(Long routeId);
+
+    List<Stop> findByRouteIdOrderBySequence(Long routeId);
 }

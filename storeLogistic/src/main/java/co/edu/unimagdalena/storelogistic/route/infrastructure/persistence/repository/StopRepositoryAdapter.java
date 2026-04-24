@@ -31,4 +31,12 @@ public class StopRepositoryAdapter implements StopRepository {
                 .map(mapper::toStop)
                 .toList();
     }
+
+    @Override
+    public List<Stop> findByRouteIdOrderBySequence(Long routeId) {
+        return springRepository.findByRouteIdOrderBySequence(routeId)
+                .stream()
+                .map(mapper::toStop)
+                .toList();
+    }
 }
