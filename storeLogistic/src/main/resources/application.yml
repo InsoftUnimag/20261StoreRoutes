@@ -40,6 +40,8 @@ spring:
           destination: ruta-asignada.response
         publicarErrorSolicitud-out-0:
           destination: error-solicitud-ruta.response
+        publicarEstadoPedido-out-0:
+          destination: estado-pedido.event
       rabbit:
         bindings:
           procesarSolicitudRuta-in-0:
