@@ -16,7 +16,9 @@ public class CarrierRepositoryAdapter implements CarrierRepository {
 
     @Override
     public Optional<Carrier> findById(Long carrierId) {
-        return springRepository.findByTransporterId(carrierId)
-                .map(entity -> new Carrier(entity.getTransporterId()));
+        if (springRepository.existsByTransporterId(carrierId)) {
+            return Optional.of(new Carrier(carrierId));
+        }
+        return Optional.empty();
     }
 }
