@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 public class OrderStatusEventDto {
 
     private Long id_pedido;
-    private String estado_final;
     private Integer tasa_efectividad;
     private Long id_transportista;
 }

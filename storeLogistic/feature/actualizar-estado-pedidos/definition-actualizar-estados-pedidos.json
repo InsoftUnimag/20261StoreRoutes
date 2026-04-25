@@ -1,0 +1,362 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Interna - Actualización de Estado de Pedidos",
+    "description": "Servicio interno para el registro del estado final de entrega de un pedido por parte del transportista. Asigna automáticamente la tasa de efectividad según el estado registrado y publica de forma asíncrona el evento al módulo financiero para la generación de liquidaciones (Módulo Logístico).",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/logistics",
+      "description": "Servidor local de desarrollo"
+    }
+  ],
+  "paths": {
+    "/orders/{idPedido}/status": {
+      "put": {
+        "summary": "Actualizar estado final de un pedido",
+        "description": "Registra el estado final de entrega de un pedido. La tasa de efectividad es asignada automáticamente por el sistema según el estado registrado. Si el pedido ya tenía un estado registrado previamente, el sistema permite la corrección y genera un registro de auditoría. Publica el evento al módulo financiero vía RabbitMQ (cola: estado-pedido.event) con la estructura: { id_pedido, tasa_efectividad, id_transportista }.",
+        "operationId": "updateOrderStatus",
+        "parameters": [
+          {
+            "name": "idPedido",
+            "in": "path",
+            "required": true,
+            "description": "Identificador único del pedido cuyo estado se va a actualizar.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 123
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrderStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado final registrado correctamente. El evento fue publicado al módulo financiero.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateOrderStatusResponse"
+                },
+                "examples": {
+                  "entregadoCompleto": {
+                    "summary": "Estado: Entregado Completo",
+                    "value": {
+                      "idPedido": 123,
+                      "estadoFinal": "Entregado Completo",
+                      "tasaEfectividad": 100,
+                      "idTransportista": 50,
+                      "fechaActualizacion": "2026-04-24T14:35:00"
+                    }
+                  },
+                  "rechazoParcial": {
+                    "summary": "Estado: Rechazo Parcial",
+                    "value": {
+                      "idPedido": 124,
+                      "estadoFinal": "Rechazo Parcial",
+                      "tasaEfectividad": 80,
+                      "idTransportista": 50,
+                      "fechaActualizacion": "2026-04-24T15:10:00"
+                    }
+                  },
+                  "noEntregado": {
+                    "summary": "Estado: No Entregado",
+                    "value": {
+                      "idPedido": 125,
+                      "estadoFinal": "No Entregado",
+                      "tasaEfectividad": 0,
+                      "idTransportista": 50,
+                      "fechaActualizacion": "2026-04-24T16:00:00"
+                    }
+                  },
+                  "devolucionErrorEmpresa": {
+                    "summary": "Estado: Devolución (Error Empresa)",
+                    "value": {
+                      "idPedido": 126,
+                      "estadoFinal": "Devolución (Error Empresa)",
+                      "tasaEfectividad": 0,
+                      "idTransportista": 50,
+                      "fechaActualizacion": "2026-04-24T16:45:00"
+                    }
+                  },
+                  "faltanteInventario": {
+                    "summary": "Estado: Faltante de Inventario",
+                    "value": {
+                      "idPedido": 127,
+                      "estadoFinal": "Faltante de Inventario",
+                      "tasaEfectividad": -100,
+                      "idTransportista": 50,
+                      "fechaActualizacion": "2026-04-24T17:20:00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida — idTransportista ausente o estadoFinal vacío.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "VALIDACION_FALLIDA",
+                  "mensaje": "El campo idTransportista es obligatorio y debe ser un número entero válido"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido o transportista no encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "pedidoNoEncontrado": {
+                    "summary": "Pedido no encontrado",
+                    "value": {
+                      "codigo": "PEDIDO_NO_ENCONTRADO",
+                      "mensaje": "No existe un pedido con el id proporcionado"
+                    }
+                  },
+                  "transportistaNoEncontrado": {
+                    "summary": "Transportista no encontrado",
+                    "value": {
+                      "codigo": "TRANSPORTISTA_NO_ENCONTRADO",
+                      "mensaje": "No existe un transportista con el id proporcionado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Estado final inválido — el valor no corresponde a ninguno de los estados permitidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "ESTADO_FINAL_INVALIDO",
+                  "mensaje": "El valor 'EstadoInventado' no es un estado final válido. Valores permitidos: Entregado Completo, Rechazo Parcial, No Entregado, Devolución (Error Empresa), Faltante de Inventario"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{idPedido}/status/audit": {
+      "get": {
+        "summary": "Consultar historial de auditoría de estado de un pedido",
+        "description": "Retorna el historial completo de cambios de estado registrados para un pedido, incluyendo el estado anterior, el nuevo estado, el transportista que realizó el cambio y el timestamp de cada modificación.",
+        "operationId": "getOrderStatusAudit",
+        "parameters": [
+          {
+            "name": "idPedido",
+            "in": "path",
+            "required": true,
+            "description": "Identificador único del pedido.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de auditoría del pedido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderStatusAuditEntry"
+                  }
+                },
+                "example": [
+                  {
+                    "idAuditoria": 1,
+                    "idPedido": 123,
+                    "estadoAnterior": "No Entregado",
+                    "estadoNuevo": "Entregado Completo",
+                    "idTransportista": 50,
+                    "timestamp": "2026-04-24T15:30:00"
+                  }
+                ]
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido no encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "codigo": "PEDIDO_NO_ENCONTRADO",
+                  "mensaje": "No existe un pedido con el id proporcionado"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UpdateOrderStatusRequest": {
+        "type": "object",
+        "required": ["idTransportista", "estadoFinal"],
+        "properties": {
+          "idTransportista": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador único del transportista que registra el estado del pedido.",
+            "example": 50
+          },
+          "estadoFinal": {
+            "type": "string",
+            "description": "Estado final de la entrega. Debe ser uno de los valores permitidos. La tasa de efectividad es asignada automáticamente por el sistema según este valor.",
+            "enum": [
+              "Entregado Completo",
+              "Rechazo Parcial",
+              "No Entregado",
+              "Devolución (Error Empresa)",
+              "Faltante de Inventario"
+            ],
+            "example": "Entregado Completo"
+          }
+        }
+      },
+      "UpdateOrderStatusResponse": {
+        "type": "object",
+        "properties": {
+          "idPedido": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador único del pedido actualizado.",
+            "example": 123
+          },
+          "estadoFinal": {
+            "type": "string",
+            "description": "Estado final registrado para el pedido.",
+            "enum": [
+              "Entregado Completo",
+              "Rechazo Parcial",
+              "No Entregado",
+              "Devolución (Error Empresa)",
+              "Faltante de Inventario"
+            ],
+            "example": "Entregado Completo"
+          },
+          "tasaEfectividad": {
+            "type": "integer",
+            "description": "Tasa de efectividad asignada automáticamente según el estado final. Rango: -100 a 100. Entregado Completo=100, Rechazo Parcial=80, No Entregado=0, Devolución (Error Empresa)=0, Faltante de Inventario=-100.",
+            "minimum": -100,
+            "maximum": 100,
+            "example": 100
+          },
+          "idTransportista": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador del transportista que registró el estado.",
+            "example": 50
+          },
+          "fechaActualizacion": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp de la última actualización del estado del pedido.",
+            "example": "2026-04-24T14:35:00"
+          }
+        }
+      },
+      "OrderStatusAuditEntry": {
+        "type": "object",
+        "properties": {
+          "idAuditoria": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador único del registro de auditoría.",
+            "example": 1
+          },
+          "idPedido": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador del pedido al que pertenece este registro de auditoría.",
+            "example": 123
+          },
+          "estadoAnterior": {
+            "type": "string",
+            "nullable": true,
+            "description": "Estado final previo al cambio. Null si es el primer registro de estado del pedido.",
+            "enum": [
+              "Entregado Completo",
+              "Rechazo Parcial",
+              "No Entregado",
+              "Devolución (Error Empresa)",
+              "Faltante de Inventario"
+            ],
+            "example": "No Entregado"
+          },
+          "estadoNuevo": {
+            "type": "string",
+            "description": "Estado final registrado en este cambio.",
+            "enum": [
+              "Entregado Completo",
+              "Rechazo Parcial",
+              "No Entregado",
+              "Devolución (Error Empresa)",
+              "Faltante de Inventario"
+            ],
+            "example": "Entregado Completo"
+          },
+          "idTransportista": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador del transportista que realizó el cambio.",
+            "example": 50
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha y hora en que se realizó el cambio de estado.",
+            "example": "2026-04-24T15:30:00"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "description": "Código de error de negocio.",
+            "example": "ESTADO_FINAL_INVALIDO"
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Descripción legible del error.",
+            "example": "El valor proporcionado no es un estado final válido"
+          }
+        }
+      }
+    }
+  }
+}
