@@ -89,6 +89,31 @@ class RouteRequestListenerTest {
     }
 
     @Test
+    @DisplayName("Route reaches 95% capacity → publishes RouteAssignedEvent AND RouteDispatchedEvent")
+    void routeReachesCapacity_publishesBothEvents() {
+        RouteRequestEvent event = RouteRequestEvent.builder()
+                .orderId(7L).clientId(2L)
+                .logisticWeight(BigDecimal.valueOf(400))
+                .deliveryAddress("Calle 7")
+                .build();
+
+        Route closedRoute = Route.reconstitute(10L, 5L, RouteCapacity.of(1_000.0),
+                BigDecimal.valueOf(970), RouteStatus.CLOSED, LocalDate.now(),
+                List.of());
+
+        when(useCase.process(7L, BigDecimal.valueOf(400), "Calle 7")).thenReturn(closedRoute);
+
+        Consumer<RouteRequestEvent> consumer = listener.procesarSolicitudRuta();
+        consumer.accept(event);
+
+        verify(publisher).publishRouteAssigned(argThat(e ->
+                e.getOrderId().equals(7L) && e.getRouteId().equals(10L)));
+        verify(publisher).publishRouteDispatched(argThat(e ->
+                e.getRouteId().equals(10L) && e.getDispatchedAt() != null));
+        verify(publisher, never()).publishRouteError(any());
+    }
+
+    @Test
     @DisplayName("Unexpected exception → rethrows for DLQ handling")
     void unexpectedException_rethrows() {
         RouteRequestEvent event = RouteRequestEvent.builder()

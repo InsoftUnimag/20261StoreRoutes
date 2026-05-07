@@ -4,7 +4,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/storeLogistic}
     username: ${DB_USER:postgres}
-    password: ${DB_PASS:1082876634}
+    password: ${DB_PASS:postgres#%}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -38,6 +38,8 @@ spring:
             max-attempts: 3
         publicarRutaAsignada-out-0:
           destination: ruta-asignada.response
+        publicarRutaDespachada-out-0:
+          destination: ruta-despachada.event
         publicarErrorSolicitud-out-0:
           destination: error-solicitud-ruta.response
         publicarEstadoPedido-out-0:

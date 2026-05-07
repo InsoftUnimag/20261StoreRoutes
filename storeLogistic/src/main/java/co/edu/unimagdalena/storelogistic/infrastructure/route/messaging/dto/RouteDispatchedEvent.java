@@ -6,15 +6,17 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RouteAssignedEvent {
-
-    @JsonProperty("idPedido")
-    private Long orderId;
+public class RouteDispatchedEvent {
 
     @JsonProperty("idRuta")
     private Long routeId;
+
+    @JsonProperty("fechaDespacho")
+    private LocalDateTime dispatchedAt;
 }

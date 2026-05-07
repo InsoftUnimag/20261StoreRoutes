@@ -66,6 +66,10 @@ public class Route {
         return occupancyPercentage().compareTo(BigDecimal.valueOf(95)) >= 0;
     }
 
+    public boolean isClosed() {
+        return this.status == RouteStatus.CLOSED;
+    }
+
     public void close() {
         if (!status.isValidTransition(RouteStatus.CLOSED))
             throw new InvalidStateTransitionException(status.invalidTransitionMessage(RouteStatus.CLOSED));

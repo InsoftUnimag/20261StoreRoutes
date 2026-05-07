@@ -4,6 +4,7 @@ import co.edu.unimagdalena.storelogistic.domain.route.exceptions.RouteException;
 import co.edu.unimagdalena.storelogistic.domain.route.models.Route;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.in.ProcessRouteRequestUseCase;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.messaging.dto.RouteAssignedEvent;
+import co.edu.unimagdalena.storelogistic.infrastructure.route.messaging.dto.RouteDispatchedEvent;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.messaging.dto.RouteErrorEvent;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.messaging.dto.RouteRequestEvent;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.messaging.publisher.RouteEventPublisher;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -43,11 +45,16 @@ public class RouteRequestListener {
                         event.getLogisticWeight(),
                         event.getDeliveryAddress()
                 );
+
                 publisher.publishRouteAssigned(RouteAssignedEvent.builder()
                         .orderId(event.getOrderId())
                         .routeId(route.routeId())
-                        .dispatchDate(route.dispatchDate())
                         .build());
+
+                if (route.isClosed()) {
+                    publisher.publishRouteDispatched(buildDispatchedEvent(route));
+                }
+
             } catch (RouteException e) {
                 log.warn("Business error processing route request for orderId={}: {}",
                         event.getOrderId(), e.getMessage());
@@ -60,5 +67,12 @@ public class RouteRequestListener {
                 throw e;
             }
         };
+    }
+
+    private RouteDispatchedEvent buildDispatchedEvent(Route route) {
+        return RouteDispatchedEvent.builder()
+                .routeId(route.routeId())
+                .dispatchedAt(LocalDateTime.now())
+                .build();
     }
 }
