@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: storelogistic-app
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+      # Base de datos — Render inyecta estos valores automáticamente
+      - key: DB_HOST
+        fromDatabase:
+          name: storelogistic-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: storelogistic-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: storelogistic-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: storelogistic-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: storelogistic-db
+          property: password
+
+      # RabbitMQ — configurar manualmente con credenciales de CloudAMQP
+      - key: RABBITMQ_HOST
+        sync: false
+      - key: RABBITMQ_PORT
+        value: "5672"
+      - key: RABBITMQ_USER
+        sync: false
+      - key: RABBITMQ_PASS
+        sync: false
+      - key: RABBITMQ_VHOST
+        value: /
+
+      # Servicios externos — completar cuando estén disponibles
+      - key: TRANSPORTER_SERVICE_URL
+        sync: false
+      - key: FINANCE_MODULE_BASE_URL
+        sync: false
+      - key: FINANCE_TIMEOUT_MS
+        value: "3000"
+      - key: FINANCE_RETRY_MAX_ATTEMPTS
+        value: "3"
+      - key: FINANCE_RETRY_INITIAL_INTERVAL_MS
+        value: "500"
+      - key: FINANCE_RETRY_MULTIPLIER
+        value: "2.0"
+
+databases:
+  - name: storelogistic-db
+    databaseName: storeLogistic
+    user: storelogistic_user
+    plan: free

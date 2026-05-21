@@ -2,7 +2,7 @@ spring:
   application:
     name: storeLogistic
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/storeLogistic}
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:storeLogistic}}
     username: ${DB_USER:postgres}
     password: ${DB_PASS:postgres#%}
     driver-class-name: org.postgresql.Driver
@@ -53,7 +53,7 @@ spring:
               requeue-rejected: false
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${PORT:${SERVER_PORT:8080}}
   servlet:
     context-path: /api/v1
 
