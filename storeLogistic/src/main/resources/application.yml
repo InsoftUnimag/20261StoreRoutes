@@ -2,7 +2,7 @@ spring:
   application:
     name: storeLogistic
   datasource:
-    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:storeLogistic}}
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:storelogistic}}
     username: ${DB_USER:postgres}
     password: ${DB_PASS:postgres#%}
     driver-class-name: org.postgresql.Driver
