@@ -8,6 +8,7 @@ import co.edu.unimagdalena.storelogistic.infrastructure.orderstatus.persistence.
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -20,6 +21,14 @@ public class OrderStatusRepositoryAdapter implements OrderRepository {
     @Override
     public Optional<Order> findById(Long orderId) {
         return springRepository.findById(orderId).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Order> findCompletedByCarrierId(Long carrierId) {
+        return springRepository.findByCarrierIdAndEstadoFinalIsNotNull(carrierId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override
