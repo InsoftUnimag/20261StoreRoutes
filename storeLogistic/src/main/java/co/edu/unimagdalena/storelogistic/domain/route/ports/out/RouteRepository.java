@@ -3,6 +3,7 @@ package co.edu.unimagdalena.storelogistic.domain.route.ports.out;
 import co.edu.unimagdalena.storelogistic.domain.route.models.Route;
 import co.edu.unimagdalena.storelogistic.domain.route.values.LogisticWeight;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface RouteRepository {
@@ -14,4 +15,6 @@ public interface RouteRepository {
     Optional<Route> findById(Long routeId);
 
     Optional<Route> findByIdAndCarrierId(Long routeId, Long carrierId);
+
+    List<Route> findAll();
 }
