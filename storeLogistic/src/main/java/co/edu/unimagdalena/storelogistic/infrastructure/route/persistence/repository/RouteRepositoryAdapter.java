@@ -9,6 +9,7 @@ import co.edu.unimagdalena.storelogistic.infrastructure.route.persistence.jparep
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -40,5 +41,10 @@ public class RouteRepositoryAdapter implements RouteRepository {
     public Optional<Route> findByIdAndCarrierId(Long routeId, Long carrierId) {
         return springRepository.findByRouteIdAndCarrierId(routeId, carrierId)
                 .map(mapper::toRoute);
+    }
+
+    @Override
+    public List<Route> findAll() {
+        return springRepository.findAll().stream().map(mapper::toRoute).toList();
     }
 }
