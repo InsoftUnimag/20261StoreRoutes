@@ -3,7 +3,8 @@ services:
     name: storelogistic-app
     runtime: docker
     plan: free
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./storeLogistic/Dockerfile
+    dockerContext: ./storeLogistic
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
