@@ -13,4 +13,6 @@ public interface StopRepository {
     List<Stop> findByRouteIdOrderBySequence(Long routeId);
 
     java.util.Optional<Stop> findByIdAndRouteId(Long stopId, Long routeId);
+
+    java.util.Optional<Stop> findByOrderId(Long orderId);
 }
