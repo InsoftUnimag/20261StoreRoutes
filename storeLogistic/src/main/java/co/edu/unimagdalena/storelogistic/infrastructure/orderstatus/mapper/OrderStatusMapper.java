@@ -10,6 +10,7 @@ import co.edu.unimagdalena.storelogistic.domain.orderstatus.values.FinalStatus;
 import co.edu.unimagdalena.storelogistic.infrastructure.orderstatus.persistence.jpa.OrderAlertJpaEntity;
 import co.edu.unimagdalena.storelogistic.infrastructure.orderstatus.persistence.jpa.OrderStatusAuditJpaEntity;
 import co.edu.unimagdalena.storelogistic.infrastructure.orderstatus.persistence.jpa.OrderStatusJpaEntity;
+import co.edu.unimagdalena.storelogistic.infrastructure.orderstatus.web.dto.OrderHistoryItemResponse;
 import co.edu.unimagdalena.storelogistic.infrastructure.orderstatus.web.dto.UpdateOrderStatusResponse;
 import org.mapstruct.Mapper;
 
@@ -17,6 +18,17 @@ import java.time.LocalDateTime;
 
 @Mapper(componentModel = "spring")
 public abstract class OrderStatusMapper {
+
+    public OrderHistoryItemResponse toHistoryItemResponse(Order order) {
+        if (order == null) return null;
+        return OrderHistoryItemResponse.builder()
+                .idPedido(order.orderId())
+                .estadoFinal(order.finalStatus() != null ? order.finalStatus().displayName() : null)
+                .tasaEfectividad(order.effectivenessRate() != null ? order.effectivenessRate().value() : null)
+                .idTransportista(order.carrierId())
+                .fechaActualizacion(order.updatedAt())
+                .build();
+    }
 
     public UpdateOrderStatusResponse toResponse(Order order) {
         if (order == null) return null;
