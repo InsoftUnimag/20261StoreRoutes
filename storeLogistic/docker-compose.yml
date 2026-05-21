@@ -1,0 +1,64 @@
+services:
+  app:
+    build: .
+    container_name: storelogistic-app
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      TRANSPORTER_SERVICE_URL: ${TRANSPORTER_SERVICE_URL}
+      FINANCE_MODULE_BASE_URL: ${FINANCE_MODULE_BASE_URL}
+      FINANCE_TIMEOUT_MS: ${FINANCE_TIMEOUT_MS:-3000}
+      FINANCE_RETRY_MAX_ATTEMPTS: ${FINANCE_RETRY_MAX_ATTEMPTS:-3}
+      FINANCE_RETRY_INITIAL_INTERVAL_MS: ${FINANCE_RETRY_INITIAL_INTERVAL_MS:-500}
+      FINANCE_RETRY_MULTIPLIER: ${FINANCE_RETRY_MULTIPLIER:-2.0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  postgres:
+    image: postgres:17.6-alpine3.22
+    container_name: storelogistic-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: storelogistic-mq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
