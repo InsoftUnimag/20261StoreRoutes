@@ -4,6 +4,7 @@ import co.edu.unimagdalena.storelogistic.domain.route.exceptions.OrderNotFoundEx
 import co.edu.unimagdalena.storelogistic.domain.route.models.*;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.in.AssignOrderUseCase;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.in.AssignOrderUseCase.AssignResult;
+import co.edu.unimagdalena.storelogistic.domain.route.ports.in.GetRoutesUseCase;
 import co.edu.unimagdalena.storelogistic.domain.route.values.*;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.mapper.RouteAssignmentMapper;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.web.controller.AssignRouteController;
@@ -32,6 +33,7 @@ class AssignRouteControllerTest {
 
     @Autowired MockMvc mockMvc;
     @MockBean AssignOrderUseCase assignOrderUseCase;
+    @MockBean GetRoutesUseCase getRoutesUseCase;
     @MockBean RouteAssignmentMapper mapper;
 
     private Route sampleRoute() {
