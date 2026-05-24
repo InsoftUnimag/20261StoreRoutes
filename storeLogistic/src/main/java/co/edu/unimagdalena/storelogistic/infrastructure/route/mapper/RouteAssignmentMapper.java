@@ -50,6 +50,7 @@ public abstract class RouteAssignmentMapper {
         if (e == null) return null;
         return new Order(
                 e.getOrderId(),
+                e.getClientId(),
                 LogisticWeight.of(e.getLogisticWeight()),
                 e.getDeliveryAddress()
         );
@@ -97,6 +98,7 @@ public abstract class RouteAssignmentMapper {
         if (o == null) return null;
         return OrderJpaEntity.builder()
                 .orderId(o.orderId())
+                .clientId(o.clientId())
                 .logisticWeight(o.logisticWeight().valueKg())
                 .deliveryAddress(o.deliveryAddress())
                 .build();

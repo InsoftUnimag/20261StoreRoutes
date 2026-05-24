@@ -39,7 +39,7 @@ class AssignOrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        sampleOrder = new Order(1L, LogisticWeight.of(500.0), "Calle Test");
+        sampleOrder = new Order(1L, 1L, LogisticWeight.of(500.0), "Calle Test");
 
         availableRoute = Route.reconstitute(10L, 5L,
                 RouteCapacity.of(1_500.0), BigDecimal.valueOf(700),
@@ -88,7 +88,7 @@ class AssignOrderServiceTest {
                 RouteCapacity.of(1_500.0), BigDecimal.valueOf(1_425),
                 RouteStatus.AVAILABLE, LocalDate.now(), List.of());
 
-        Order smallOrder = new Order(2L, LogisticWeight.of(75.0), "Addr");
+        Order smallOrder = new Order(2L, 1L, LogisticWeight.of(75.0), "Addr");
 
         when(orderRepository.findById(2L)).thenReturn(Optional.of(smallOrder));
         when(routeRepository.findAvailableWithCapacity(any())).thenReturn(Optional.of(nearFullRoute));

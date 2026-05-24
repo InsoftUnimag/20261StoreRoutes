@@ -109,7 +109,7 @@ class RouteTest {
     @Test
     @DisplayName("assignOrder → creates Stop and updates accumulated weight")
     void assignOrder_happyPath_createsStopAndUpdatesWeight() {
-        Order order = new Order(42L, LogisticWeight.of(500.0), "Calle 1 #2-3");
+        Order order = new Order(42L, 1L, LogisticWeight.of(500.0), "Calle 1 #2-3");
 
         Stop stop = emptyRoute.assignOrder(order);
 
@@ -124,8 +124,8 @@ class RouteTest {
     @Test
     @DisplayName("assignOrder → second stop gets sequence 2")
     void assignOrder_secondStop_getsSequence2() {
-        Order first  = new Order(1L, LogisticWeight.of(300.0), "Addr 1");
-        Order second = new Order(2L, LogisticWeight.of(200.0), "Addr 2");
+        Order first  = new Order(1L, 1L, LogisticWeight.of(300.0), "Addr 1");
+        Order second = new Order(2L, 1L, LogisticWeight.of(200.0), "Addr 2");
 
         emptyRoute.assignOrder(first);
         Stop stop2 = emptyRoute.assignOrder(second);
@@ -136,7 +136,7 @@ class RouteTest {
     @Test
     @DisplayName("assignOrder → throws CapacityExceededException when no space")
     void assignOrder_noCapacity_throwsException() {
-        Order order = new Order(1L, LogisticWeight.of(2_000.0), "Addr");
+        Order order = new Order(1L, 1L, LogisticWeight.of(2_000.0), "Addr");
         assertThatThrownBy(() -> emptyRoute.assignOrder(order))
                 .isInstanceOf(CapacityExceededException.class);
     }

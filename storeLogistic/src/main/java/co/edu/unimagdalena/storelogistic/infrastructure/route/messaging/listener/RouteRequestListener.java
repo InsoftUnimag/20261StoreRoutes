@@ -27,8 +27,8 @@ public class RouteRequestListener {
     @Bean
     public Consumer<RouteRequestEvent> procesarSolicitudRuta() {
         return event -> {
-            log.info("Received SolicitudRutaRequerida: orderId={}, weight={}, address={}",
-                    event.getOrderId(), event.getLogisticWeight(), event.getDeliveryAddress());
+            log.info("Received SolicitudRutaRequerida: orderId={}, clientId={}, weight={}, address={}",
+                    event.getOrderId(), event.getClientId(), event.getLogisticWeight(), event.getDeliveryAddress());
 
             if (event.getOrderId() == null || event.getLogisticWeight() == null ||
                     event.getDeliveryAddress() == null || event.getDeliveryAddress().isBlank()) {
@@ -42,6 +42,7 @@ public class RouteRequestListener {
             try {
                 Route route = processRouteRequestUseCase.process(
                         event.getOrderId(),
+                        event.getClientId(),
                         event.getLogisticWeight(),
                         event.getDeliveryAddress()
                 );

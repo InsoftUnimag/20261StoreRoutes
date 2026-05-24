@@ -40,7 +40,7 @@ dependencies {
 
     // Messaging — Spring Cloud Stream + RabbitMQ
     implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
-
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     // Database & Migrations
     runtimeOnly 'org.postgresql:postgresql'
     implementation 'org.flywaydb:flyway-core:11.20.3'                        // antes: 10.4.1

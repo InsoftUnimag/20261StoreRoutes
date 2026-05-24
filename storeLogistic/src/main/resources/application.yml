@@ -34,6 +34,7 @@ spring:
         procesarSolicitudRuta-in-0:
           destination: solicitud-ruta.request
           group: logistica-solicitud-ruta
+          content-type: application/json
           consumer:
             max-attempts: 3
         publicarRutaAsignada-out-0:
@@ -71,7 +72,7 @@ logistics:
 
 finance:
   module:
-    base-url: ${FINANCE_MODULE_BASE_URL:http://localhost:8082/api/v1}
+    base-url: ${FINANCE_MODULE_BASE_URL:http://18.217.180.69:8080/api/v1}
     timeout-ms: ${FINANCE_TIMEOUT_MS:3000}
     retry:
       max-attempts: ${FINANCE_RETRY_MAX_ATTEMPTS:3}

@@ -23,12 +23,12 @@ public class ProcessRouteRequestService implements ProcessRouteRequestUseCase {
 
     @Override
     @Transactional
-    public Route process(Long orderId, BigDecimal logisticWeightKg, String deliveryAddress) {
+    public Route process(Long orderId,Long clientId, BigDecimal logisticWeightKg, String deliveryAddress) {
         log.info("Processing route request: orderId={}, weight={} kg", orderId, logisticWeightKg);
 
         Order order = orderRepository.findById(orderId).orElseGet(() -> {
             log.info("Order {} not found locally — persisting from event data", orderId);
-            Order newOrder = new Order(orderId, LogisticWeight.of(logisticWeightKg), deliveryAddress);
+            Order newOrder = new Order(orderId, clientId, LogisticWeight.of(logisticWeightKg), deliveryAddress);
             return orderRepository.save(newOrder);
         });
 

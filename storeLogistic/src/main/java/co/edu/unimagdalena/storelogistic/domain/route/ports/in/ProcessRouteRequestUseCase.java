@@ -6,5 +6,5 @@ import java.math.BigDecimal;
 
 public interface ProcessRouteRequestUseCase {
 
-    Route process(Long orderId, BigDecimal logisticWeightKg, String deliveryAddress);
+    Route process(Long orderId,Long clientId, BigDecimal logisticWeightKg, String deliveryAddress);
 }

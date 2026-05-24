@@ -19,6 +19,10 @@ public class OrderJpaEntity {
     @Column(name = "id_order")
     private Long orderId;
 
+    @Column(name = "id_cliente")
+    private Long clientId;
+
+
     @Column(name = "logistic_weight", nullable = false)
     private BigDecimal logisticWeight;
 

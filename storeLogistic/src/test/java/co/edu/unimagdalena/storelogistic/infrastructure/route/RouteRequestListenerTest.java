@@ -43,7 +43,7 @@ class RouteRequestListenerTest {
                 .deliveryAddress("Calle 1")
                 .build();
 
-        when(useCase.process(1L, BigDecimal.valueOf(500), "Calle 1")).thenReturn(sampleRoute());
+        when(useCase.process(1L, 2L, BigDecimal.valueOf(500), "Calle 1")).thenReturn(sampleRoute());
 
         Consumer<RouteRequestEvent> consumer = listener.procesarSolicitudRuta();
         consumer.accept(event);
@@ -62,7 +62,7 @@ class RouteRequestListenerTest {
                 .deliveryAddress("Calle 1")
                 .build();
 
-        when(useCase.process(any(), any(), any()))
+        when(useCase.process(any(), any(), any(), any()))
                 .thenThrow(new CapacityExceededException("Too heavy"));
 
         Consumer<RouteRequestEvent> consumer = listener.procesarSolicitudRuta();
@@ -84,7 +84,7 @@ class RouteRequestListenerTest {
         Consumer<RouteRequestEvent> consumer = listener.procesarSolicitudRuta();
         consumer.accept(event);
 
-        verify(useCase, never()).process(any(), any(), any());
+        verify(useCase, never()).process(any(), any(), any(), any());
         verify(publisher).publishRouteError(any());
     }
 
@@ -101,7 +101,7 @@ class RouteRequestListenerTest {
                 BigDecimal.valueOf(970), RouteStatus.CLOSED, LocalDate.now(),
                 List.of());
 
-        when(useCase.process(7L, BigDecimal.valueOf(400), "Calle 7")).thenReturn(closedRoute);
+        when(useCase.process(7L, 2L, BigDecimal.valueOf(400), "Calle 7")).thenReturn(closedRoute);
 
         Consumer<RouteRequestEvent> consumer = listener.procesarSolicitudRuta();
         consumer.accept(event);
@@ -122,7 +122,7 @@ class RouteRequestListenerTest {
                 .deliveryAddress("Calle 1")
                 .build();
 
-        when(useCase.process(any(), any(), any()))
+        when(useCase.process(any(), any(), any(), any()))
                 .thenThrow(new RuntimeException("DB connection lost"));
 
         Consumer<RouteRequestEvent> consumer = listener.procesarSolicitudRuta();
