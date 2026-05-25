@@ -69,6 +69,11 @@ logistics:
   transporter:
     service:
       url: ${TRANSPORTER_SERVICE_URL:http://localhost:8081/api/v1}
+      timeout-ms: ${TRANSPORTER_TIMEOUT_MS:3000}
+      retry:
+        max-attempts: ${TRANSPORTER_RETRY_MAX_ATTEMPTS:3}
+        initial-interval-ms: ${TRANSPORTER_RETRY_INITIAL_INTERVAL_MS:500}
+        multiplier: ${TRANSPORTER_RETRY_MULTIPLIER:2.0}
 
 finance:
   module:
