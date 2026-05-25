@@ -9,10 +9,9 @@ import org.springframework.stereotype.Component;
 import java.util.Set;
 
 /**
- * Temporary mock — replace with a real RestClient adapter when the transporter module is available.
+ * Mock for tests — replaced by {@link TransporterServiceClient} in production.
  */
 @Slf4j
-@Component
 public class MockTransporterServiceClient implements TransporterServicePort {
 
     private static final Long AVAILABLE_TRANSPORTER_ID = 1L;
