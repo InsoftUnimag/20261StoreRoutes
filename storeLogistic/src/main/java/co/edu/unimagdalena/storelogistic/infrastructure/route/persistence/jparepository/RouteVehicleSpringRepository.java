@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface RouteVehicleSpringRepository extends JpaRepository<RouteVehicleJpaEntity, Long> {
 
-    @Query("SELECT v FROM RouteVehicleJpaEntity v WHERE v.category.tipo = :categoryName AND v.status = 'DISPONIBLE'")
+    @Query("SELECT v FROM RouteVehicleJpaEntity v WHERE v.category.tipo = :categoryName AND v.status = 'DISPONIBLE' ORDER BY v.loadCapacityKg DESC LIMIT 1")
     Optional<RouteVehicleJpaEntity> findFirstAvailableByCategory(@Param("categoryName") String categoryName);
 
     @Query("SELECT v FROM RouteVehicleJpaEntity v WHERE v.status = 'DISPONIBLE' ORDER BY v.loadCapacityKg DESC LIMIT 1")
