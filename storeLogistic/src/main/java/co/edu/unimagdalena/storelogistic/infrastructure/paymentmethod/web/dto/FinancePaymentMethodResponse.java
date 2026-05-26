@@ -12,12 +12,12 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class FinancePaymentMethodResponse {
 
-    @JsonProperty("id_pedido")
+    @JsonProperty("idPedido")
     private Long idPedido;
 
-    @JsonProperty("forma_pago")
+    @JsonProperty("formaPago")
     private String formaPago;
 
-    @JsonProperty("total_pedido")
-    private BigDecimal totalPedido;
+    @JsonProperty("valorContraEntrega")
+    private BigDecimal valorContraEntrega;
 }

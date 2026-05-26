@@ -8,8 +8,6 @@ import co.edu.unimagdalena.storelogistic.domain.paymentmethod.models.OrderPaymen
 import co.edu.unimagdalena.storelogistic.domain.paymentmethod.ports.out.FinanceGatewayPort;
 import co.edu.unimagdalena.storelogistic.domain.paymentmethod.values.PaymentMethod;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
@@ -19,12 +17,11 @@ import java.util.function.Supplier;
  * Temporary mock — replace with FinanceModuleClient when the Finance Module is available.
  */
 @Slf4j
-@Component
 public class MockFinanceModuleClient implements FinanceGatewayPort {
 
     private static final Map<Long, OrderPaymentMethod> HAPPY_PATHS = Map.of(
             1L, OrderPaymentMethod.of(1L, PaymentMethod.CONTRA_ENTREGA, new BigDecimal("150000.00")),
-            2L, OrderPaymentMethod.of(2L, PaymentMethod.CARTERA_COMERCIAL, null)
+            2L, OrderPaymentMethod.of(2L, PaymentMethod.CARTERA_COMERCIAL, BigDecimal.ZERO)
     );
 
     private static final Map<Long, Supplier<LogisticsException>> ERROR_CASES = Map.of(
