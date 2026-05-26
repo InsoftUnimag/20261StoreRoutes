@@ -129,11 +129,19 @@ src/test/java/co/edu/unimagdalena/storelogistic/transportista/
 **Purpose**: Verificar o configurar el proyecto Gradle, dependencias base y entorno de test, reutilizando de features previas donde aplique.
 
 - [ ] T001 Verificar o crear estructura de directorios según el layout definido en este plan.
-- [ ] T002 Verificar `build.gradle.kts` — incluir dependencias necesarias: `spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `postgresql`, `flyway-core`, `lombok`, `mapstruct`, `springdoc-openapi-starter-webmvc-ui`, `spring-boot-starter-test`, `testcontainers`, `archunit`. Agregar si no están presentes.
-- [ ] T003 Verificar `application.yml` — agregar propiedad de configuración `logistica.transportista.service.url` para la URL base del módulo externo de Transportista. Verificar profiles `dev`, `test`, `prod`.
+- [ ] T002 Verificar `build.gradle.kts` — incluir dependencias necesarias: `spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `postgresql`, `flyway-core`, `lombok`, `mapstruct`, `spring-retry`, `spring-boot-starter-aop` (requerido por Spring Retry), `springdoc-openapi-starter-webmvc-ui`, `spring-boot-starter-test`, `testcontainers`, `archunit`. Agregar si no están presentes.
+- [ ] T003 Verificar `application.yml` — agregar propiedades de configuración:
+  - `logistics.transporter.service.url` — URL base del módulo externo de Transportista.
+  - `logistics.transporter.service.timeout-ms` — timeout de conexión/lectura (default 3000ms).
+  - `logistics.transporter.service.retry.max-attempts` — reintentos máximos (default 3).
+  - `logistics.transporter.service.retry.initial-interval-ms` — intervalo inicial backoff (default 500ms).
+  - `logistics.transporter.service.retry.multiplier` — multiplicador backoff (default 2.0).
+  Verificar profiles `dev`, `test`, `prod`.
 - [ ] T004 Verificar scripts de migración Flyway — la tabla `vehiculos` ya debe existir con columna `id_transportista` de `gestion-flota`. Crear `V_solicitar_transportista__verify_column.sql` solo si la columna no existe o requiere ajuste.
 - [ ] T005 Verificar `ArchUnit` — reglas de capas ya deben existir de `gestion-flota`: domain sin imports de Spring/JPA, application sin imports de infrastructure. Agregar regla que `client/` no puede ser referenciado desde `application/` ni `domain/`.
 - [ ] T006 Verificar `PostgreSQLContainer.java` — reutilizar configuración TestContainers existente.
+- [ ] T006b Crear `TransporterRestClientConfig.java` en `infrastructure/config/` — bean `transporterRestClient` de tipo `RestClient` con `baseUrl` de `logistics.transporter.service.url` y timeout configurable.
+- [ ] T006c Crear `TransporterRetryConfig.java` en `infrastructure/config/` — `@EnableRetry`, bean `transporterRetryTemplate` con `maxAttempts=3`, `ExponentialBackOffPolicy` (initialInterval=500ms, multiplier=2.0). Política de no reintentar `TransporterNotAvailableException` ni `InvalidTransporterException`.
 
 **Checkpoint**: Proyecto compila, configuración de URL externa presente, migraciones corren sin error, contenedor de test levanta correctamente.
 
@@ -157,9 +165,12 @@ src/test/java/co/edu/unimagdalena/storelogistic/transportista/
 - [ ] T014 Reutilizar puerto de salida `VehiculoRepository.java` de `gestion-flota` — sin modificaciones.
 - [ ] T015 Reutilizar `VehiculoJpaEntity.java` de `gestion-flota` — verificar que el campo `id_transportista` esté mapeado correctamente.
 - [ ] T016 Reutilizar `VehiculoSpringRepository.java` y `VehiculoRepositoryAdapter.java` de `gestion-flota` — sin modificaciones.
-- [ ] T017 Crear `TransportistaServiceClient.java` en `infrastructure/client/` implementando `TransportistaServicePort`:
-  - Usa `RestClient` de Spring (no `RestTemplate`).
-  - Lee la URL base desde la propiedad `logistica.transportista.service.url`.
+- [ ] T017 Crear `TransporterServiceClient.java` en `infrastructure/client/` implementando `TransporterServicePort`:
+  - Usa `RestClient` de Spring (no `RestTemplate`) inyectado via `@Qualifier("transporterRestClient")`.
+  - Lee la URL base desde la propiedad `logistics.transporter.service.url`.
+  - Maneja reintentos automáticos via `RetryTemplate` inyectado via `@Qualifier("transporterRetryTemplate")` con backoff exponencial (máximo 3 intentos, 500ms inicial, multiplicador 2.0) — configurado en `TransporterRetryConfig.java`.
+  - `RestClient` configurado con timeout de conexión y lectura (default 3s) via `TransporterRestClientConfig.java`.
+  - Llama a `GET /transportistas/disponible` para obtener transportista disponible y `GET /transportistas/{id}` para validar existencia.
   - Convierte respuestas HTTP en domain objects o excepciones de dominio — ningún detalle HTTP escapa de este adaptador.
 - [ ] T018 Crear `TransportistaDisponibleClientDTO.java` en `infrastructure/web/dto/` — DTO de deserialización de la respuesta del módulo externo. Interno a infraestructura, nunca expuesto fuera de `TransportistaServiceClient`.
 - [ ] T019 Crear `SolicitarTransportistaResponse.java` en `infrastructure/web/dto/` — campos: `idVehiculo`, `idTransportista`. Respuesta de la API REST de este módulo.
@@ -172,7 +183,7 @@ src/test/java/co/edu/unimagdalena/storelogistic/transportista/
 - [ ] T024 Unit tests para `Vehiculo.asignarTransportista()` — verificar que el campo `idTransportista` se actualiza correctamente; verificar que un vehículo sin transportista puede recibirlo; verificar que un vehículo con transportista previo admite reasignación (edge case del spec).
 - [ ] T025 Unit tests para `EstadoTransportista.java` — verificar valores del enum.
 
-**Checkpoint**: Domain models, value objects, ports, adaptadores de persistencia y cliente HTTP listos. El proyecto compila sin errores. Tests T024–T025 pasan.
+**Checkpoint**: Domain models, value objects, ports, adaptadores de persistencia y cliente HTTP listos. Beans `transporterRestClient` y `transporterRetryTemplate` configurados. El proyecto compila sin errores. Tests T024–T025 pasan.
 
 ---
 

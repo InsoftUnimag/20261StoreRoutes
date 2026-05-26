@@ -1,34 +1,4 @@
-package co.edu.unimagdalena.storelogistic.flota.domain.values;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-/**
- * Value Object de dominio para representar filtros de búsqueda de vehículos.
- * Sin anotaciones de Spring ni Bean Validation - es lógica pura de dominio.
- */
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class FiltroVehiculo {
-    private TipoCategoria categoria;
-    private CapacidadCarga capacidadMin;
-    private CapacidadCarga capacidadMax;
-    private EstadoVehiculo estado;
-
-    /**
-     * Valida que si ambas capacidades están presentes, min <= max
-     */
-    public boolean esValido() {
-        if (capacidadMin != null && capacidadMax != null) {
-            return capacidadMin.getPesoKg().compareTo(capacidadMax.getPesoKg()) <= 0;
-        }
-        return true;
-    }
-}{
+{
   "openapi": "3.0.3",
   "info": {
     "title": "API Interna - Gestión de Flota",
@@ -61,7 +31,7 @@ public class FiltroVehiculo {
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["DISPONIBLE", "EN_RUTA", "EN_MANTENIMIENTO", "FUERA_SERVICIO"]
+              "enum": ["DISPONIBLE", "EN_RUTA", "EN_MANTENIMIENTO", "FUERA_DE_SERVICIO"]
             }
           },
           {

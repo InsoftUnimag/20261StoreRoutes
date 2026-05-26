@@ -189,5 +189,5 @@ WHERE r.id_route = :routeId
 - **Detalle con pago**: El controller llama a `ConsultPaymentMethodUseCase.consult(orderId)` una sola vez por request — usa `MockFinanceModuleClient` hasta que el módulo financiero esté disponible.
 - **`GetStopDetailService` retorna solo `Stop`**: el ensamblado con `OrderPaymentMethod` es responsabilidad del controller, manteniendo el service puro.
 - **`QueryStopsMapper` es abstract class**: necesario porque `Stop` usa fluent accessors (`stopId()`) en lugar de JavaBean getters (`getStopId()`), lo que impide el mapeo automático de MapStruct.
-- **`totalACobrar: null`** para CARTERA_COMERCIAL — el frontend debe mostrar "No cobrar", nunca "$0".
+- **`totalACobrar: 0`** para CARTERA_COMERCIAL — el backend devuelve `BigDecimal(0)` (no null). El frontend debe mostrar "No cobrar", independientemente del valor numérico.
 - **`@Transactional(readOnly = true)`** en ambos services de aplicación.

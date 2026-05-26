@@ -45,7 +45,7 @@ Como supervizor de flota, necesito visualizar, filtrar, registrar y cambiar el e
 
 - **FR-004**: System MUST permitir registrar nuevo vehículo con: Categoría, CapacidadCarga, IdTransportista. Retornar IdVehículo auto-generado con estado inicial "en mantenimiento".
 
-- **FR-005**: System MUST permitir cambiar estado entre transiciones válidas (en mantenimiento <-> disponible, disponible <-> en ruta, cualquier -> fuera de servicio, fuera de servicio <-> en mantenimiento).
+- **FR-005**: System MUST permitir cambiar estado entre transiciones válidas (en mantenimiento <-> disponible, disponible <-> en ruta, cualquier -> fuera de servicio, fuera de servicio <-> en mantenimiento). La transición a EN_RUTA también puede ocurrir automáticamente desde el módulo de asignación de rutas (`AssignOrderService`) al cerrar una ruta con ≥95% de capacidad.
 
 ### Key Entities
 

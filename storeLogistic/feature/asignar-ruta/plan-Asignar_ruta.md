@@ -255,7 +255,7 @@ src/test/java/co/edu/unimagdalena/storelogistic/route/
   - Obtiene `Order` vía `OrderRepository.findById` — lanza `OrderNotFoundException` si no existe.
   - Llama a `RouteRepository.findAvailableWithCapacity(order.getTotalWeight())`.
   - **Rama Escenario 1 — ruta existente**: llama a `route.assignOrder(order)` (la lógica de negocio vive en el modelo), guarda la ruta actualizada vía `RouteRepository.save`, guarda la nueva parada vía `StopRepository.save`.
-  - Tras guardar: llama a `route.isFull()` — si es verdadero, llama a `route.close()` y guarda de nuevo (FR-005). `isFull()` solo se comprueba tras persistir para garantizar que la verificación del 95% use el peso final.
+  - Tras guardar: llama a `route.isFull()` — si es verdadero, llama a `route.close()` y guarda de nuevo (FR-005). Adicionalmente, si se cerró la ruta, inyecta `ChangeVehicleStatusUseCase` y llama a `changeVehicleStatusUseCase.changeStatus(route.vehicleId(), VehicleStatus.EN_RUTA)` para cambiar automáticamente el estado del vehículo a EN_RUTA (FR-007). `isFull()` solo se comprueba tras persistir para garantizar que la verificación del 95% use el peso final.
   - Retorna `Route` (objeto de dominio). Sin conocimiento de DTOs.
 - [ ] T039 [SC1] Crear `AssignRouteController.java` con `POST /api/logistics/routes/assignments`:
   - Extrae `orderId` de `AssignOrderRequest`.
@@ -402,6 +402,7 @@ src/test/java/co/edu/unimagdalena/storelogistic/route/
 - **`Route.isFull()` es la única fuente de verdad para el umbral del 95%** (FR-005). Ni el servicio ni el controlador duplican esta lógica.
 - **`@Transactional(isolation = SERIALIZABLE)` en `AssignOrderService` es innegociable** según la restricción de concurrencia de la spec.
 - La verificación de cierre al 95% debe ocurrir **después** de `RouteRepository.save` — el servicio guarda el peso actualizado primero, luego verifica `isFull()`, luego guarda de nuevo con estado `CLOSED` si es necesario.
+- **Al cerrar la ruta, el vehículo cambia automáticamente a EN_RUTA**: `AssignOrderService` inyecta `ChangeVehicleStatusUseCase` (feature gestión-flota) y lo invoca con `VehicleStatus.EN_RUTA` cuando la ruta se cierra al ≥95%. Este cambio de estado se realiza dentro de la misma transacción.
 - La etiqueta `[P]` marca las pruebas a escribir antes de la implementación (test-first).
 - Las etiquetas `[SC1]`, `[SC2]`, `[SC3]`, `[EC]` mapean directamente a los escenarios de la spec para trazabilidad.
 - Hacer commit después de cada tarea completada con pruebas en verde.

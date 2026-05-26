@@ -38,7 +38,7 @@ Como transportista, quiero ver el detalle completo de una parada específica —
 2. **Scenario**: Detalle exitoso — parada CARTERA_COMERCIAL
    - **Given** una parada con pedido de método CARTERA_COMERCIAL
    - **When** el transportista solicita el detalle
-   - **Then** HTTP 200 con `paymentMethod: "CARTERA_COMERCIAL"`, `totalACobrar: null` (el conductor NO cobra).
+   - **Then** HTTP 200 con `paymentMethod: "CARTERA_COMERCIAL"`, `totalACobrar: 0` (el conductor NO cobra).
 
 ---
 
@@ -60,7 +60,7 @@ Como transportista, quiero ver el detalle completo de una parada específica —
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir a un transportista listar las paradas de una ruta, verificando que la ruta esté asignada al vehículo con su `id_transportista`. Datos mínimos por parada: `idStop`, `sequence`, `deliveryAddress`, `orderId`, `status`.
-- **FR-002**: El sistema DEBE permitir al transportista ver el detalle de una parada específica, incluyendo: `customerContact`, `paymentMethod` (obtenido del Módulo Financiero via `ConsultPaymentMethodUseCase`), y `totalACobrar` (null si CARTERA_COMERCIAL, monto si CONTRA_ENTREGA).
+- **FR-002**: El sistema DEBE permitir al transportista ver el detalle de una parada específica, incluyendo: `customerContact`, `paymentMethod` (obtenido del Módulo Financiero via `ConsultPaymentMethodUseCase`), y `totalACobrar` (0 si CARTERA_COMERCIAL, monto si CONTRA_ENTREGA).
 - **FR-003**: El sistema DEBE restringir el acceso únicamente a rutas cuyo vehículo tenga `id_transportista = carrierId`. El rechazo (403) no debe revelar si la ruta existe o pertenece a otro transportista.
 - **FR-004**: El sistema DEBE registrar logs de auditoría (INFO en consulta exitosa, WARN en acceso denegado).
 
@@ -70,7 +70,7 @@ Como transportista, quiero ver el detalle completo de una parada específica —
 - **Parada**: `id_stop`, `id_route`, `id_order`, `sequence`, `delivery_address`, `customer_contact`, `status`.
 - **Vehículo**: `id_vehiculo`, `id_transportista (BIGINT)` — enlace entre ruta y transportista.
 - **Transportista**: identificado por `id_transportista (Long)` — módulo externo, sin tabla propia en este módulo.
-- **Método de pago**: consultado al Módulo Financiero por `id_order`. Retorna `paymentMethod` y `totalPedido` (nullable).
+- **Método de pago**: consultado al Módulo Financiero por `id_order`. Retorna `paymentMethod` y `totalPedido` (0 para CARTERA_COMERCIAL, monto para CONTRA_ENTREGA).
 
 ---
 
@@ -128,7 +128,7 @@ GET /api/v1/logistics/routes/{routeId}/stops/{stopId}?carrierId={carrierId}
   "orderId": 6,
   "customerContact": "3009876543",
   "paymentMethod": "CARTERA_COMERCIAL",
-  "totalACobrar": null,
+  "totalACobrar": 0,
   "status": "PENDING"
 }
 ```

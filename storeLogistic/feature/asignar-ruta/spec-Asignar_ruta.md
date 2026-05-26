@@ -27,7 +27,15 @@ Como sistema interno del módulo de Logística, debo asignar cada pedido a una r
    - **When** se completa la asignación del pedido
    - **Then** se marca la ruta como "cerrada" para no aceptar más pedidos
 
+4. **Scenario**: Ruta queda PENDING_VEHICLE cuando no hay vehículo disponible
+   - **Given** no existe vehículo con capacidad disponible para el pesoTotal del pedido
+   - **When** se procesa la asignación del pedido (creando nueva ruta)
+   - **Then** la ruta se crea con estado "PENDING_VEHICLE", sin vehículo asignado
 
+5. **Scenario**: Vehículo cambia automáticamente a EN_RUTA al cerrar ruta
+   - **Given** una ruta con vehículo asignado alcanza ≥95% de capacidad
+   - **When** se marca la ruta como "cerrada"
+   - **Then** el vehículo asociado cambia automáticamente de estado a "EN_RUTA"
 
 ---
 
@@ -49,13 +57,15 @@ Como sistema interno del módulo de Logística, debo asignar cada pedido a una r
 
 - **FR-002**: System MUST [asignar el pedido a una ruta existente disponible que tenga capacidad suficiente, priorizando la que mayor porcentaje de uso alcance.]
 
-- **FR-003**: System MUST [crear una nueva ruta y asignar un vehículo automáticamente cuando no exista ruta con capacidad disponible.]
+- **FR-003**: System MUST [crear una nueva ruta al asignar un pedido cuando no exista ruta con capacidad disponible. Si hay vehículo con capacidad suficiente, se asigna automáticamente. Si no, la ruta queda en estado PENDING_VEHICLE y se asigna vehículo posteriormente via `AssignVehicleToPendingRoutesService`.]
 
 - **FR-004**: System MUST [seleccionar el tipo de vehículo basado en pesoTotal, siguiendo la clasificación: Camioneta (hasta 1.5 ton), Camión Sencillo (hasta 5 ton), Tractocamión Regional (>25 ton).]
 
 - **FR-005**: System MUST [marcar la ruta como "cerrada" cuando alcance o supere el 95% de su capacidad total.]
 
 - **FR-006**: System MUST [registrar la fecha de despacho para la ruta (fecha actual o próxima ruta disponible).]
+
+- **FR-007**: System MUST [cambiar el estado del vehículo a EN_RUTA automáticamente cuando la ruta se cierra al alcanzar ≥95% de capacidad, invocando `ChangeVehicleStatusUseCase` desde `AssignOrderService`.]
 
 
 ### Key Entities
@@ -79,7 +89,7 @@ Como sistema interno del módulo de Logística, debo asignar cada pedido a una r
 
 - **SC-002**: Eficiencia de capacidad. Al menos el 95% de las rutas despachadas deben cumplir con ≥95% de ocupación antes de despacho.
 
-- **SC-003**: Creación automática de rutas. El 100% de pedidos sin ruta disponible deben generar automáticamente una nueva ruta (si hay vehículo) o retornar error.
+- **SC-003**: Creación automática de rutas. El 100% de pedidos sin ruta disponible deben generar automáticamente una nueva ruta (con vehículo si hay disponible, o PENDING_VEHICLE si no).
 
-- **SC-004**: Integridad de datos. 0% de rutas creadas sin vehículo asignado (cuando hay disponibilidad).
+- **SC-004**: Vehículo en ruta. El 100% de los vehículos asociados a rutas cerradas deben tener estado EN_RUTA.
 

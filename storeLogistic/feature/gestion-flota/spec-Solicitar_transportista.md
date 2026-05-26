@@ -46,12 +46,17 @@ Como módulo de Logística de Despacho y Distribución, solicito un transportist
 
 ### Functional Requirements
 
-- **FR-001**: System MUST permitir al módulo de Logística de Despacho y Distribución solicitar un idTransportista disponible al módulo de Transportista.
-- **FR-002**: System MUST retornar un idTransportista válido de un transportista disponible.
-- **FR-003**: System MUST asignar el idTransportista al vehículo actualizando el campo idTransportista del vehículo.
-- **FR-004**: System MUST validar que el idTransportista exista y esté disponible antes de asignarlo.
-- **FR-005**: System MUST permitir reasignar un idTransportista a un vehículo diferente.
-- **FR-006**: System MUST retornar errores claros cuando no hay transportistas disponibles o el idTransportista es inválido.
+- **FR-001**: System MUST [solicitar un transportista disponible al módulo de Transportista vía HTTP `GET /transportistas/disponible` usando `RestClient` + `RetryTemplate` con backoff exponencial (máximo 3 intentos, 500ms inicial, multiplicador 2.0).]
+
+- **FR-002**: System MUST [filtrar la respuesta del módulo de Transportista (`TransporterAvailableClientDTO`) para retornar solo transportistas con estado `"DISPONIBLE"`. Si no hay disponibles, lanzar `TransporterNotAvailableException`.]
+
+- **FR-003**: System MUST [validar existencia de un transportista vía HTTP `GET /transportistas/{id}` antes de asignarlo al vehículo. Si el módulo retorna 404, lanzar `InvalidTransporterException`.]
+
+- **FR-004**: System MUST [asignar el idTransportista al vehículo actualizando el campo idTransportista del vehículo.]
+
+- **FR-005**: System MUST [reintentar la comunicación con el módulo de Transportista hasta 3 veces con backoff exponencial en caso de timeout o error transitorio. Si tras 3 intentos el módulo no responde, lanzar `LogisticsException("El módulo de Transportista no está disponible.")`.]
+
+- **FR-006**: System MUST [configurar `RestClient` con timeout de conexión y lectura (default 3s) via `TransporterRestClientConfig`, y `RetryTemplate` via `TransporterRetryConfig` con política de no reintentar errores `TransporterNotAvailableException` ni `InvalidTransporterException`.]
 
 ### Key Entities 
 

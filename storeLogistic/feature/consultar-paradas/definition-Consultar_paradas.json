@@ -95,7 +95,7 @@
     "/logistics/routes/{routeId}/stops/{stopId}": {
       "get": {
         "summary": "Ver detalle de una parada",
-        "description": "Retorna el detalle completo de una parada, incluyendo el método de pago y el total a cobrar consultados al Módulo Financiero. Para CARTERA_COMERCIAL, totalACobrar es null (el conductor no cobra). Para CONTRA_ENTREGA, totalACobrar contiene el monto exacto.",
+        "description": "Retorna el detalle completo de una parada, incluyendo el método de pago y el total a cobrar consultados al Módulo Financiero. Para CARTERA_COMERCIAL, totalACobrar es 0 (el conductor no cobra). Para CONTRA_ENTREGA, totalACobrar contiene el monto exacto.",
         "operationId": "getStopDetail",
         "tags": ["Consultar Paradas"],
         "parameters": [
@@ -150,13 +150,38 @@
                       "orderId": 6,
                       "customerContact": "3009876543",
                       "paymentMethod": "CARTERA_COMERCIAL",
-                      "totalACobrar": null,
-                      "status": "PENDING"
-                    }
-                  }
-                }
-              }
-            }
+            "totalACobrar": 0,
+            "status": "PENDING"
+          }
+        }
+      }
+    },
+    "components": {
+      "StopSummaryDTO": {
+        "type": "object",
+        "description": "Resumen de parada para la lista — sin datos de pago",
+        "properties": {
+          "idStop":          { "type": "integer", "format": "int64" },
+          "sequence":        { "type": "integer" },
+          "deliveryAddress": { "type": "string" },
+          "orderId":         { "type": "integer", "format": "int64" },
+          "status":          { "type": "string", "enum": ["PENDING", "DELIVERED", "REJECTED"] }
+        }
+      },
+      "StopDetailDTO": {
+        "type": "object",
+        "description": "Detalle completo de una parada, incluye método de pago del Módulo Financiero",
+        "properties": {
+          "idStop":          { "type": "integer", "format": "int64" },
+          "sequence":        { "type": "integer" },
+          "deliveryAddress": { "type": "string" },
+          "orderId":         { "type": "integer", "format": "int64" },
+          "customerContact": { "type": "string", "nullable": true },
+          "paymentMethod":   { "type": "string", "enum": ["CONTRA_ENTREGA", "CARTERA_COMERCIAL"] },
+          "totalACobrar":    {
+            "type": "number",
+            "format": "double",
+            "description": "Monto a cobrar. 0 para CARTERA_COMERCIAL — el frontend debe mostrar 'No cobrar' cuando paymentMethod sea CARTERA_COMERCIAL."
           },
           "400": {
             "description": "Parámetro faltante o inválido",

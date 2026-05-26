@@ -40,74 +40,76 @@ docs/specs/solicitar-ruta/
 - **application/**: contiene servicios de caso de uso, sin DTOs y sin referencias a infraestructura.
 - **infrastructure/**: contiene adaptadores, DTOs, mappers, listeners y persistencia. Los DTOs de eventos viven aquí, y los mappers son detalles de implementación del adaptador.
 
+Los nombres de clases y valores están en **inglés** para consistencia con el código real del proyecto (ej. `RouteStatus`, `StopStatus`, `VehicleType`, `URBAN_VAN`).
+
 ```text
-src/main/java/com/logistica/solicitar/
+src/main/java/co/edu/unimagdalena/storelogistic/route/
 ├── domain/
 │   ├── models/
-│   │   ├── Ruta.java                    # Reutilizar de asignar-ruta
-│   │   ├── Parada.java                  # Reutilizar
-│   │   ├── Vehiculo.java                # Reutilizar
-│   │   └── Pedido.java                  # Reutilizar
+│   │   ├── Route.java                   # Reutilizar de asignar-ruta
+│   │   ├── Stop.java                    # Reutilizar
+│   │   ├── Vehicle.java                 # Reutilizar
+│   │   └── Order.java                   # Reutilizar
 │   ├── values/
-│   │   ├── PesoTotal.java               # Reutilizar
-│   │   ├── CapacidadCarga.java          # Reutilizar
-│   │   ├── TipoVehiculo.java            # Reutilizar
-│   │   ├── EstadoRuta.java              # Reutilizar
-│   │   └── EstadoParada.java            # Reutilizar
+│   │   ├── TotalWeight.java             # Reutilizar
+│   │   ├── LoadCapacity.java            # Reutilizar
+│   │   ├── VehicleType.java             # URBAN_VAN | SINGLE_TRUCK | REGIONAL_SEMI
+│   │   ├── RouteStatus.java             # AVAILABLE | CLOSED | PENDING_VEHICLE
+│   │   └── StopStatus.java              # PENDING | DELIVERED | REJECTED
 │   ├── ports/
 │   │   ├── in/
-│   │   │   └── ProcesarSolicitudRutaUseCase.java  # NEW: Para procesar evento
+│   │   │   └── ProcessRouteRequestUseCase.java  # NEW: Para procesar evento
 │   │   └── out/
-│   │       ├── RutaRepository.java      # Reutilizar
-│   │       ├── ParadaRepository.java    # Reutilizar
-│   │       ├── VehiculoRepository.java  # Reutilizar
-│   │       ├── PedidoRepository.java    # Reutilizar
-│   │       └── EventPublisher.java      # NEW: Para publicar eventos
+│   │       ├── RouteRepository.java      # Reutilizar
+│   │       ├── StopRepository.java       # Reutilizar
+│   │       ├── VehicleRepository.java    # Reutilizar
+│   │       ├── OrderRepository.java      # Reutilizar
+│   │       └── EventPublisher.java       # NEW: Para publicar eventos
 │   └── exceptions/
-│       ├── CapacidadExcedidaException.java  # Reutilizar
-│       ├── VehiculoNoDisponibleException.java  # Reutilizar
-│       └── LogisticaException.java      # Reutilizar
+│       ├── CapacityExceededException.java    # Reutilizar
+│       ├── VehicleNotAvailableException.java # Reutilizar
+│       └── LogisticsException.java           # Reutilizar
 │
 ├── application/
 │   └── services/
-│       ├── ProcesarSolicitudRutaService.java  # NEW: Lógica de procesamiento
-│       └── SeleccionarVehiculoService.java    # Reutilizar
+│       ├── ProcessRouteRequestService.java  # NEW: Lógica de procesamiento
+│       └── SelectVehicleService.java        # Reutilizar
 │
 └── infrastructure/
     ├── config/
     │   ├── JpaConfig.java               # Reutilizar
-    │   └── StreamConfig.java            # NEW: Config para Spring Cloud Stream
+    │   └── MessagingConfig.java         # NEW: Config para eventos asíncronos
     ├── mapper/
-    │   └── SolicitarMapper.java         # NEW: MapStruct para eventos
+    │   └── RouteRequestMapper.java      # NEW: MapStruct para eventos
     ├── persistence/
     │   ├── jpa/
-    │   │   ├── RutaJpaEntity.java       # Reutilizar
-    │   │   ├── ParadaJpaEntity.java     # Reutilizar
-    │   │   ├── VehiculoJpaEntity.java   # Reutilizar
-    │   │   └── PedidoJpaEntity.java     # Reutilizar
+    │   │   ├── RouteJpaEntity.java      # Reutilizar
+    │   │   ├── StopJpaEntity.java       # Reutilizar
+    │   │   ├── VehicleJpaEntity.java    # Reutilizar
+    │   │   └── OrderJpaEntity.java      # Reutilizar
     │   ├── repository/
-    │   │   ├── RutaRepositoryAdapter.java     # Reutilizar
-    │   │   ├── ParadaRepositoryAdapter.java   # Reutilizar
-    │   │   ├── VehiculoRepositoryAdapter.java # Reutilizar
-    │   │   └── PedidoRepositoryAdapter.java   # Reutilizar
+    │   │   ├── RouteRepositoryAdapter.java     # Reutilizar
+    │   │   ├── StopRepositoryAdapter.java      # Reutilizar
+    │   │   ├── VehicleRepositoryAdapter.java   # Reutilizar
+    │   │   └── OrderRepositoryAdapter.java     # Reutilizar
     │   └── jparepository/
-    │       ├── RutaSpringRepository.java      # Reutilizar
-    │       ├── ParadaSpringRepository.java    # Reutilizar
-    │       ├── VehiculoSpringRepository.java  # Reutilizar
-    │       └── PedidoSpringRepository.java    # Reutilizar
+    │       ├── RouteSpringRepository.java      # Reutilizar
+    │       ├── StopSpringRepository.java       # Reutilizar
+    │       ├── VehicleSpringRepository.java    # Reutilizar
+    │       └── OrderSpringRepository.java      # Reutilizar
     ├── messaging/
     │   ├── dto/
-    │   │   ├── SolicitudRutaRequeridaEvent.java  # NEW: DTO para evento entrada
-    │   │   ├── RutaAsignadaEvent.java       # NEW: DTO para evento salida
-    │   │   ├── ErrorSolicitudRutaEvent.java # NEW: DTO para error
-    │   │   └── RutaDTO.java                 # Reutilizar si aplica
+    │   │   ├── RouteRequestEvent.java          # NEW: DTO para evento entrada
+    │   │   ├── RouteAssignedEvent.java         # NEW: DTO para evento salida
+    │   │   ├── RouteRequestErrorEvent.java     # NEW: DTO para error
+    │   │   └── RouteDTO.java                   # Reutilizar si aplica
     │   └── event/
-    │       ├── SolicitudRutaEventListener.java  # NEW: Listener para evento entrada
-    │       └── EventPublisherAdapter.java       # NEW: Publisher para salida
+    │       ├── RouteRequestEventListener.java  # NEW: Listener para evento entrada
+    │       └── EventPublisherAdapter.java      # NEW: Publisher para salida
     └── exception/
         └── GlobalExceptionHandler.java   # Reutilizar, adaptar para eventos
 
-src/test/java/com/logistica/solicitar/
+src/test/java/co/edu/unimagdalena/storelogistic/route/request/
 ├── unit/
 │   ├── domain/
 │   │   ├── models/

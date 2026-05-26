@@ -271,11 +271,12 @@ src/test/java/com/logistica/flota/
 
 ### Implementación de Scenario 3
 
-- [ ] T055 [SC3] Completar `EstadoVehiculo.esTransicionValida(EstadoVehiculo destino)` con todas las reglas de FR-005:
+- [ ] T055 [SC3] Completar `VehicleStatus.isValidTransition(VehicleStatus target)` con todas las reglas de FR-005:
   - `EN_MANTENIMIENTO ↔ DISPONIBLE`
   - `DISPONIBLE ↔ EN_RUTA`
   - `cualquiera → FUERA_DE_SERVICIO`
   - `FUERA_DE_SERVICIO ↔ EN_MANTENIMIENTO`
+  - **Nota**: La transición a `EN_RUTA` también puede ocurrir automáticamente desde `AssignOrderService` (feature asignar-ruta) cuando una ruta se cierra al alcanzar ≥95% de capacidad. `ChangeVehicleStatusUseCase` es invocado programáticamente, y `VehicleStatus.isValidTransition` valida que la transición desde el estado actual a `EN_RUTA` sea permitida.
 - [ ] T056 [SC3] Agregar método domain a `Vehiculo.java`: `cambiarEstado(EstadoVehiculo nuevo)` — valida con `EstadoVehiculo.esTransicionValida`, lanza `TransicionEstadoInvalidaException` si es inválida, actualiza estado si es válida.
 - [ ] T057 [SC3] Implementar `CambiarEstadoVehiculoService.java` implementando `CambiarEstadoVehiculoUseCase`:
   - `@Transactional(isolation = Isolation.SERIALIZABLE)`

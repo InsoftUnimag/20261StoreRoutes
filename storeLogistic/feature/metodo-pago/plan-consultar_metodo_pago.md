@@ -1,11 +1,11 @@
 # Implementation Plan: Consultar Método de Pago de un Pedido
 
-**Date**: April 23, 2026
+**Date**: April 23, 2026 (updated May 26, 2026)
 **Spec**: `@/docs/specs/consult-payment-method/spec.md`
 
 ## Summary
 
-Implementar la consulta síncrona del método de pago de un pedido al Módulo Financiero, enviando únicamente el `orderId`. El sistema expone un endpoint interno en el módulo de Logística que delega en un cliente HTTP hacia el Módulo Financiero, normaliza la respuesta a un objeto de dominio (`PaymentMethod`) y aplica reintentos con backoff exponencial ante fallos de conectividad (máximo 3 intentos). Stack: Java 21 + Spring Boot 3.x MVC + Spring Retry + WebClient, como microservicio independiente del módulo de logística.
+Implementar la consulta síncrona del método de pago de un pedido al Módulo Financiero, enviando únicamente el `orderId`. El sistema no expone un endpoint público propio; en su lugar, la consulta se realiza internamente desde `QueryStopsController.getStopDetail()` que llama a `ConsultPaymentMethodUseCase` → `FinanceGatewayPort` → `FinanceModuleClient`. Un cliente HTTP hacia el Módulo Financiero normaliza la respuesta a un objeto de dominio (`OrderPaymentMethod`) y aplica reintentos con backoff exponencial ante fallos de conectividad (máximo 3 intentos). La información de pago se sirve al conductor como parte del `StopDetailDTO`. Stack: Java 21 + Spring Boot 3.x MVC + Spring Retry + WebClient + WebFlux.
 
 ---
 
@@ -74,19 +74,16 @@ src/main/java/co/edu/unimagdalena/storelogistic/paymentmethod/
     ├── client/
     │   └── FinanceModuleClient.java    # implementa FinanceGatewayPort — adapta WebClient a puerto de dominio
     ├── web/
-    │   ├── controller/
-    │   │   └── PaymentMethodController.java
     │   └── dto/
-    │       ├── PaymentMethodResponse.java         # orderId, paymentMethod
     │       └── FinancePaymentMethodResponse.java  # DTO interno para deserializar respuesta del Módulo Financiero
     ├── mapper/
-    │   └── PaymentMethodMapper.java   # MapStruct @Component — OrderPaymentMethod ↔ DTOs
+    │   └── PaymentMethodMapper.java   # MapStruct @Component — FinancePaymentMethodResponse → OrderPaymentMethod
     └── exception/
         ├── GlobalExceptionHandler.java   # reutilizar del módulo — agregar nuevas excepciones
         └── ErrorResponse.java            # reutilizar del módulo
 ```
 
-**Structure Decision**: Arquitectura hexagonal limpia con tres capas (domain, application, infrastructure). El dominio no tiene dependencias de frameworks. El único adaptador de entrada HTTP es `PaymentMethodController`. El único adaptador de salida HTTP es `FinanceModuleClient`. No existen DTOs en `application/` ni en `domain/`.
+**Structure Decision**: Arquitectura hexagonal limpia con tres capas (domain, application, infrastructure). El dominio no tiene dependencias de frameworks. **No existe adaptador de entrada HTTP propio** — la consulta se integra desde `QueryStopsController` (feature consultar-paradas) que inyecta `ConsultPaymentMethodUseCase`. El único adaptador de salida HTTP es `FinanceModuleClient`. No existen DTOs en `application/` ni en `domain/`.
 
 ```text
 src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
@@ -100,13 +97,10 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 │   │   └── ConsultPaymentMethodServiceTest.java
 │   └── infrastructure/
 │       ├── FinanceModuleClientTest.java
-│       ├── PaymentMethodMapperTest.java
-│       └── PaymentMethodControllerTest.java
+│       └── PaymentMethodMapperTest.java
 ├── integration/
 │   ├── FinanceModuleClientIntegrationTest.java    # WireMock — simula respuestas del Módulo Financiero
 │   └── ConsultPaymentMethodServiceIntegrationTest.java
-├── contract/
-│   └── PaymentMethodApiContractTest.java
 └── testdata/
     ├── fixtures/
     │   └── OrderPaymentMethodFixture.java
@@ -165,14 +159,14 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 
 ## Phase 3: Scenario 1 — Query returns CONTRA_ENTREGA (P1)
 
-**Goal**: When `GET /api/v1/pedidos/{id_pedido}/forma-pago` is called for an order whose `forma_pago` is `CONTRA_ENTREGA`, the system returns `{orderId, paymentMethod: "CONTRA_ENTREGA"}` with HTTP 200 (FR-001, FR-002, SC-001, SC-003).
+**Goal**: When `FinanceModuleClient.callFinanceModule(orderId)` is called for an order whose `forma_pago` is `CONTRA_ENTREGA`, the system returns `OrderPaymentMethod(orderId, CONTRA_ENTREGA, totalPedido)` (FR-001, FR-002, SC-001, SC-003).
 
 **Independent Test**: Given an order with `forma_pago = CONTRA_ENTREGA` stubbed in WireMock, `GET /api/v1/pedidos/{id_pedido}/forma-pago` returns HTTP 200 with `orderId` and `paymentMethod: "CONTRA_ENTREGA"`.
 
 ### Tests for Scenario 1
 
-- [ ] T022 [P] [SC1] Contract test in `PaymentMethodApiContractTest` — `GET /api/v1/pedidos/{id_pedido}/forma-pago` with a valid `orderId` whose stub returns `CONTRA_ENTREGA` → HTTP 200, body contains `orderId`, `paymentMethod: "CONTRA_ENTREGA"` y `totalPedido: 150000.00` (FR-001, FR-002, SC-001, SC-003).
-- [ ] T023 [P] [SC1] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/1/forma-pago` → 200 `{"id_pedido":1,"forma_pago":"CONTRA_ENTREGA","total_pedido":150000.00}`; verify `FinanceModuleClient.findByOrderId(1L)` returns `OrderPaymentMethod` with `paymentMethod = CONTRA_ENTREGA` y `totalPedido = 150000.00`.
+- [ ] T022 [P] [SC1] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/1/pago-transporte` → 200 `{"idPedido":1,"formaPago":"CONTRA_ENTREGA","valorContraEntrega":150000.00}`; verify `FinanceModuleClient.findByOrderId(1L)` returns `OrderPaymentMethod` with `paymentMethod = CONTRA_ENTREGA` y `totalPedido = 150000.00`.
+- [ ] T023 [P] [SC1] Integration test in `FinanceModuleClientIntegrationTest` — WireMock verify endpoint is called with correct path.
 
 ### Implementation for Scenario 1
 
@@ -180,7 +174,7 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 - [ ] T025 [SC1] Crear `RetryConfig.java` en `infrastructure/config/` — habilitar `@EnableRetry`. Definir bean `RetryTemplate` con `maxAttempts=3`, backoff exponencial con `initialInterval` y `multiplier` leídos de `application.yml` (FR-004).
 - [ ] T026 [SC1] Implementar `FinanceModuleClient.java` implementando `FinanceGatewayPort`:
   - Inyecta `WebClient` y `RetryTemplate`.
-  - `findByOrderId(Long orderId)` — invoca `GET /api/v1/pedidos/{orderId}/forma-pago` usando `WebClient`.
+  - `findByOrderId(Long orderId)` — invoca `GET /api/v1/pedidos/{orderId}/pago-transporte` usando `WebClient`.
   - Mapea la respuesta `FinancePaymentMethodResponse` → `OrderPaymentMethod` vía `PaymentMethodMapper`.
   - Ante HTTP 404: lanza `OrderNotFoundException`.
   - Ante HTTP 422 / cuerpo con error de pago no registrado: lanza `PaymentMethodNotRegisteredException`.
@@ -188,37 +182,29 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 - [ ] T027 [SC1] Implementar `ConsultPaymentMethodService.java` implementando `ConsultPaymentMethodUseCase`:
   - Inyecta `FinanceGatewayPort` (nunca `FinanceModuleClient` directamente — depende de la abstracción, no de la implementación — SRP/DIP).
   - `consult(Long orderId)` — delega en `FinanceGatewayPort.findByOrderId(orderId)` y retorna `OrderPaymentMethod`. Sin lógica de transformación ni de HTTP.
-- [ ] T028 [SC1] Crear `PaymentMethodController.java` con `GET /api/v1/pedidos/{id_pedido}/forma-pago`:
-  - Extrae `id_pedido` como `@PathVariable Long orderId`.
-  - Llama a `ConsultPaymentMethodUseCase.consult(orderId)`.
-  - Mapea `OrderPaymentMethod → PaymentMethodResponse` usando `PaymentMethodMapper`.
-  - Retorna HTTP 200.
+- [ ] T028 [SC1] **El controller no existe como endpoint público**. La consulta se invoca desde `QueryStopsController.getStopDetail()` (feature consultar-paradas) que inyecta `ConsultPaymentMethodUseCase` y combina el `OrderPaymentMethod` con el `Stop` para armar el `StopDetailDTO`.
 - [ ] T029 [SC1] Unit tests for `ConsultPaymentMethodService`:
   - Happy path: `FinanceGatewayPort` mockeado devuelve `OrderPaymentMethod` con `CONTRA_ENTREGA`; verificar que el servicio retorna el mismo objeto sin transformación.
   - `OrderNotFoundException` se propaga sin ser capturada ni envuelta.
   - `FinanceServiceUnavailableException` se propaga sin ser capturada ni envuelta.
-- [ ] T030 [SC1] Unit tests for `PaymentMethodController` con MockMvc:
-  - `GET /api/v1/pedidos/1/forma-pago` con `ConsultPaymentMethodUseCase` mockeado devolviendo `CONTRA_ENTREGA` → HTTP 200, body `{"orderId":1,"paymentMethod":"CONTRA_ENTREGA"}`.
-  - `orderId` no numérico en path → HTTP 400.
 
-**Checkpoint**: `GET /api/v1/pedidos/{id_pedido}/forma-pago` retorna `CONTRA_ENTREGA` de extremo a extremo. T022–T023 pasan con WireMock.
+**Checkpoint**: `FinanceModuleClient.findByOrderId()` retorna `OrderPaymentMethod` correctamente. T022–T023 pasan con WireMock.
 
 ---
 
 ## Phase 4: Scenario 2 — Query returns CARTERA_COMERCIAL (P1)
 
-**Goal**: When the same endpoint is called for an order whose `forma_pago` is `CARTERA_COMERCIAL`, the system returns `{orderId, paymentMethod: "CARTERA_COMERCIAL"}` with HTTP 200 (FR-001, FR-002, SC-001, SC-003).
+**Goal**: When `FinanceModuleClient.callFinanceModule(orderId)` is called for an order whose `forma_pago` is `CARTERA_COMERCIAL`, the system returns `OrderPaymentMethod(orderId, CARTERA_COMERCIAL, totalPedido=0)` (FR-001, FR-002, SC-001, SC-003).
 
 **Independent Test**: Given an order with `forma_pago = CARTERA_COMERCIAL` stubbed in WireMock, `GET /api/v1/pedidos/{id_pedido}/forma-pago` returns HTTP 200 with `orderId` and `paymentMethod: "CARTERA_COMERCIAL"`.
 
 ### Tests for Scenario 2
 
-- [ ] T031 [P] [SC2] Contract test in `PaymentMethodApiContractTest` — `GET /api/v1/pedidos/{id_pedido}/forma-pago` with stub returning `CARTERA_COMERCIAL` → HTTP 200, body contains `orderId`, `paymentMethod: "CARTERA_COMERCIAL"` y `totalPedido: null` (FR-002, SC-001, SC-003).
-- [ ] T032 [P] [SC2] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/2/forma-pago` → 200 `{"id_pedido":2,"forma_pago":"CARTERA_COMERCIAL","total_pedido":null}`; verify `FinanceModuleClient.findByOrderId(2L)` returns `OrderPaymentMethod` with `paymentMethod = CARTERA_COMERCIAL` y `totalPedido = null`.
+- [ ] T031 [P] [SC2] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/2/pago-transporte` → 200 `{"idPedido":2,"formaPago":"CARTERA_COMERCIAL","valorContraEntrega":0}`; verify `FinanceModuleClient.findByOrderId(2L)` returns `OrderPaymentMethod` with `paymentMethod = CARTERA_COMERCIAL` y `totalPedido = 0`.
 
 ### Implementation for Scenario 2
 
-- [ ] T033 [SC2] Verificar que `FinanceModuleClient.findByOrderId()` implementado en T026 maneja `CARTERA_COMERCIAL` correctamente — el `PaymentMethod.fromString()` debe reconocer ambos valores del enum. No se requiere nueva implementación si T026 es genérico.
+- [ ] T033 [SC2] Verificar que `FinanceModuleClient.findByOrderId()` implementado en T026 maneja `CARTERA_COMERCIAL` correctamente — el `PaymentMethod.fromString()` debe reconocer ambos valores del enum y `valorContraEntrega: 0` se mapea a `totalPedido: 0`. No se requiere nueva implementación si T026 es genérico.
 - [ ] T034 [SC2] Unit tests for `ConsultPaymentMethodService`:
   - `FinanceGatewayPort` mockeado devuelve `OrderPaymentMethod` con `CARTERA_COMERCIAL`; verificar que el servicio retorna el mismo objeto sin transformación.
 - [ ] T035 [SC2] Unit tests for `PaymentMethodMapper`:
@@ -238,8 +224,7 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 
 ### Tests for Scenario 3
 
-- [ ] T036 [P] [SC3] Contract test in `PaymentMethodApiContractTest` — `GET /api/v1/pedidos/999/forma-pago` with WireMock stub returning 404 → HTTP 404, body contains `"Pedido no encontrado"` (FR-003, SC-001).
-- [ ] T037 [P] [SC3] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/999/forma-pago` → 404; verify `FinanceModuleClient.findByOrderId(999L)` throws `OrderNotFoundException` with message `"Pedido no encontrado"`.
+- [ ] T036 [P] [SC3] Integration test in `FinanceModuleClientIntegrationTest` — WireMock stubs `GET /api/v1/pedidos/999/pago-transporte` → 404; verify `FinanceModuleClient.findByOrderId(999L)` throws `OrderNotFoundException` with message `"Pedido no encontrado"`.
 
 ### Implementation for Scenario 3
 
@@ -257,11 +242,11 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 
 **Purpose**: Cubrir los casos borde explícitos definidos en la spec.
 
-- [ ] T041 [EC] El cliente no tiene forma de pago registrada — WireMock stub retorna un error específico del Módulo Financiero (ej. HTTP 422 o cuerpo con mensaje `"El cliente no tiene forma de pago registrada"`); `FinanceModuleClient` lanza `PaymentMethodNotRegisteredException`; `GlobalExceptionHandler` retorna HTTP 422 con el mensaje exacto. Contract test: `GET /api/v1/pedidos/{id_pedido}/forma-pago` → HTTP 422 `"El cliente no tiene forma de pago registrada"` (edge case de spec).
-- [ ] T042 [EC] Módulo Financiero no disponible — WireMock stub retorna 503 en los 3 intentos; verificar que `RetryTemplate` reintenta exactamente 3 veces con backoff exponencial; tras agotar reintentos, `FinanceModuleClient` lanza `FinanceServiceUnavailableException`; `GlobalExceptionHandler` retorna HTTP 503. Integration test con `FinanceModuleClientIntegrationTest` verificando que WireMock recibe exactamente 3 llamadas (FR-004, edge case de spec).
+- [ ] T041 [EC] El cliente no tiene forma de pago registrada — WireMock stub retorna HTTP 422; `FinanceModuleClient` lanza `PaymentMethodNotRegisteredException`; se propaga al llamante. (edge case de spec).
+- [ ] T042 [EC] Módulo Financiero no disponible — WireMock stub retorna 503 en los 3 intentos; verificar que `RetryTemplate` reintenta exactamente 3 veces con backoff exponencial; tras agotar reintentos, `FinanceModuleClient` lanza `FinanceServiceUnavailableException`. Integration test con `FinanceModuleClientIntegrationTest` verificando que WireMock recibe exactamente 3 llamadas (FR-004, edge case de spec).
 - [ ] T043 [EC] Timeout en el Módulo Financiero — WireMock stub introduce delay > `finance.module.timeout-ms`; verificar que el timeout dispara el mecanismo de reintento; tras 3 intentos fallidos, se lanza `FinanceServiceUnavailableException`. Integration test: verificar que el total de tiempo no supera 2 segundos (SC-002) si el timeout por intento está correctamente configurado.
 - [ ] T044 [EC] Reintento exitoso en segundo intento — WireMock stub retorna 503 en el primer intento y 200 en el segundo; verificar que el sistema retorna la respuesta exitosa sin propagar el error (FR-004 — resiliencia, no solo fallo total).
-- [ ] T045 [EC] `orderId` con valor inválido en path (no numérico, negativo, cero) — `PaymentMethodController` con `@PathVariable` no numérico → HTTP 400 sin llamar al servicio. Prueba unitaria con MockMvc.
+- [ ] T045 [EC] `orderId` con valor inválido (negativo, cero) — validar que `FinanceModuleClient` recibe el valor correctamente; la validación de parámetros ocurre en `QueryStopsController` (feature consultar-paradas).
 
 **Checkpoint**: Todos los casos borde de la spec cubiertos con pruebas automatizadas.
 
@@ -277,7 +262,7 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
   - `WARN` en cada reintento (intento número N de 3, causa del fallo).
   - `ERROR` al agotar reintentos (`orderId`, cantidad de intentos, última excepción).
   - `WARN` cuando el Módulo Financiero retorna `OrderNotFoundException` o `PaymentMethodNotRegisteredException` (errores esperados de negocio).
-- [ ] T047 Documentar API con `springdoc-openapi` — endpoint `GET /api/v1/pedidos/{id_pedido}/forma-pago`, esquemas de respuesta, todos los códigos HTTP posibles: 200, 400, 404, 422, 503.
+- [ ] T047 Documentar la API del Módulo Financiero externo — endpoint `GET /api/v1/pedidos/{id}/pago-transporte`, esquemas de respuesta (`FinancePaymentMethodResponse`), códigos HTTP posibles: 200, 404, 422, 503. La integración se documenta en la definición OpenAPI (`definition-Consultar_metodo_pago.json`).
 - [ ] T048 `@ArchTest` con ArchUnit — verificar:
   - `domain/` sin imports de Spring, JPA, WebClient ni web.
   - `application/` puede importar `domain/`, no `infrastructure/`.
@@ -320,6 +305,8 @@ src/test/java/co/edu/unimagdalena/storelogistic/paymentmethod/
 - **DTOs exclusivamente en infraestructura**: `PaymentMethodResponse` y `FinancePaymentMethodResponse` viven en `infrastructure/web/dto/`. Nunca en `application/` ni en `domain/`.
 - **Mapper exclusivamente en infraestructura**: `PaymentMethodMapper` vive en `infrastructure/mapper/`. El controlador es el único invocador para mapear `OrderPaymentMethod → PaymentMethodResponse`.
 - **El servicio opera únicamente con objetos de dominio**: `ConsultPaymentMethodService` recibe `Long orderId` y retorna `OrderPaymentMethod`. No tiene conocimiento de `PaymentMethodResponse`, `FinancePaymentMethodResponse` ni de ningún detalle HTTP.
+- **No existe endpoint público propio**: a diferencia de lo planeado originalmente, `PaymentMethodController` fue eliminado. La consulta de método de pago se realiza exclusivamente desde `QueryStopsController.getStopDetail()` (feature consultar-paradas), que inyecta `ConsultPaymentMethodUseCase`. La respuesta se sirve al conductor a través de `StopDetailDTO.paymentMethod` y `StopDetailDTO.totalACobrar`.
+- **`totalPedido` es 0 para CARTERA_COMERCIAL**: el `FinancePaymentMethodResponse` devuelve `valorContraEntrega: 0` para pagos con cartera comercial, que se mapea a `totalPedido: BigDecimal(0)` en `OrderPaymentMethod`. El `StopDetailDTO.totalACobrar` refleja este valor.
 - **La lógica de deserialización y manejo de errores HTTP vive en el adaptador de salida**: `FinanceModuleClient` es la única clase que conoce los códigos HTTP del Módulo Financiero, los DTOs de respuesta externa y la estrategia de reintentos. Ninguna otra clase duplica esta lógica.
 - **`PaymentMethod.fromString()` es la única fuente de verdad para validar valores de pago** (FR-002). Ni el mapper ni el cliente HTTP duplican esta lógica.
 - **Los reintentos aplican exclusivamente a errores de conectividad (5xx, timeout)**, no a errores de negocio (404, 422). `FinanceModuleClient` debe diferenciar explícitamente ambos casos antes de aplicar el retry.

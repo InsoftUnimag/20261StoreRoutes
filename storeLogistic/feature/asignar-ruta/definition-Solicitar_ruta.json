@@ -120,90 +120,90 @@
     "FR-006": "Publicar evento ErrorSolicitudRuta cuando el procesamiento falle.",
     "FR-007": "Marcar la ruta como cerrada cuando la carga alcance el 95% de capacidad."
   },
-  "x-domain-model": {
+    "x-domain-model": {
     "description": "Modelo de dominio y puertos de la feature, alineado al plan de arquitectura hexagonal.",
     "entities": {
-      "Ruta": {
+      "Route": {
         "description": "Ruta de entrega con lista de paradas, pedidos y vehículo asignado.",
         "fields": {
-          "idRuta": "Integer — identificador único de la ruta",
-          "paradas": "List<Parada> — paradas asignadas a la ruta",
-          "pedidos": "List<Pedido> — pedidos asignados a la ruta",
-          "idVehiculo": "Integer — vehículo asignado",
-          "fechaDespacho": "LocalDate — fecha de despacho de la ruta",
-          "estado": "EstadoRuta — DISPONIBLE | CERRADA",
-          "capacidadUtilizada": "CapacidadCarga — capacidad actualmente utilizada"
+          "routeId": "Long — identificador único de la ruta",
+          "stops": "List<Stop> — paradas asignadas a la ruta",
+          "orders": "List<Order> — pedidos asignados",
+          "vehicleId": "Long — vehículo asignado (nullable si PENDING_VEHICLE)",
+          "dispatchDate": "LocalDate — fecha de despacho de la ruta",
+          "status": "RouteStatus — AVAILABLE | CLOSED | PENDING_VEHICLE",
+          "accumulatedWeight": "TotalWeight — peso actualmente acumulado"
         }
       },
-      "Pedido": {
+      "Order": {
         "description": "Documento de entrega con peso y dirección.",
         "fields": {
-          "idPedido": "Integer — identificador único del pedido",
-          "idCliente": "Integer — identificador del cliente",
-          "pesoTotal": "PesoTotal — carga total del pedido",
-          "direccionEntrega": "String — dirección de entrega"
+          "orderId": "Long — identificador único del pedido",
+          "clientId": "Long — identificador del cliente",
+          "totalWeight": "TotalWeight — carga total del pedido",
+          "deliveryAddress": "String — dirección de entrega"
         }
       }
     },
     "ports": {
       "in": {
-        "ProcesarSolicitudRutaUseCase": {
-          "method": "Ruta procesar(SolicitudRuta solicitud)",
+        "ProcessRouteRequestUseCase": {
+          "method": "Route process(RouteRequest request)",
           "description": "Puerto de entrada que recibe la solicitud de ruta y retorna la ruta asignada en dominio."
         }
       },
       "out": {
-        "RutaRepository": {
+        "RouteRepository": {
           "description": "Repositorio de rutas para búsqueda, persistencia y actualización de rutas existentes."
         },
-        "ParadaRepository": {
+        "StopRepository": {
           "description": "Repositorio de paradas para persistir la secuencia de entregas."
         },
-        "VehiculoRepository": {
+        "VehicleRepository": {
           "description": "Repositorio de vehículos para validar capacidad y disponibilidad."
         },
-        "PedidoRepository": {
+        "OrderRepository": {
           "description": "Repositorio de pedidos para persistir la solicitud y vincularla a la ruta."
         },
         "EventPublisher": {
-          "description": "Puerto de salida para publicar eventos de respuesta en RabbitMQ."
+          "description": "Puerto de salida para publicar eventos de respuesta."
         }
       }
     },
     "exceptions": {
-      "CapacidadExcedidaException": {
-        "descripcion": "Se lanza cuando el pedido no puede caber en la ruta disponible actual.",
+      "CapacityExceededException": {
+        "descripcion": "Se lanza cuando el pedido excede la capacidad disponible.",
         "httpStatus": "N/A — evento de error"
       },
-      "VehiculoNoDisponibleException": {
-        "descripcion": "Se lanza cuando no hay vehículos disponibles para asignar una ruta.",
+      "VehicleNotAvailableException": {
+        "descripcion": "Se lanza cuando no hay vehículos disponibles.",
         "httpStatus": "N/A — evento de error"
       },
-      "LogisticaException": {
+      "LogisticsException": {
         "descripcion": "Error genérico de dominio para el módulo de logística.",
         "httpStatus": "N/A — evento de error"
       }
     },
     "valueObjects": {
-      "PesoTotal": {
-        "descripcion": "Valor de dominio para peso del pedido en kilogramos.",
+      "TotalWeight": {
+        "descripcion": "Value object para peso del pedido en kilogramos.",
         "validacion": "Debe ser mayor que 0."
       },
-      "CapacidadCarga": {
-        "descripcion": "Valor de dominio para la capacidad de carga de una ruta o vehículo.",
+      "LoadCapacity": {
+        "descripcion": "Value object para la capacidad de carga.",
         "validacion": "Debe ser mayor que 0."
       },
-      "TipoVehiculo": {
-        "descripcion": "Enum reutilizado para clasificar vehículos.",
-        "valores": ["CAMIONETA_URBANA", "CAMION_SENCILLO", "TRACTOCAMION_REGIONAL"]
+      "VehicleType": {
+        "descripcion": "Enum para clasificar vehículos.",
+        "valores": ["URBAN_VAN", "SINGLE_TRUCK", "REGIONAL_SEMI"]
       },
-      "EstadoRuta": {
+      "RouteStatus": {
         "descripcion": "Enum de estado de ruta.",
-        "valores": ["DISPONIBLE", "CERRADA"]
+        "valores": ["AVAILABLE", "CLOSED", "PENDING_VEHICLE"]
       },
-      "EstadoParada": {
+      "StopStatus": {
         "descripcion": "Enum de estado de parada.",
-        "valores": ["PENDIENTE", "COMPLETADA"]
+        "valores": ["PENDING", "DELIVERED", "REJECTED"]
       }
     }
   },
@@ -211,42 +211,42 @@
     "description": "Componentes de infraestructura y adaptadores necesarios para la feature.",
     "adapters": {
       "in": {
-        "SolicitudRutaEventListener": {
-          "descripcion": "Listener de Spring Cloud Stream que consume el evento SolicitudRutaRequerida y transforma el DTO a dominio.",
-          "queue": "solicitud-ruta.request"
+        "RouteRequestEventListener": {
+          "descripcion": "Listener que consume el evento de solicitud de ruta y transforma el DTO a dominio.",
+          "queue": "route-request"
         }
       },
       "out": {
         "EventPublisherAdapter": {
-          "descripcion": "Publica eventos RutaAsignada o ErrorSolicitudRuta a RabbitMQ.",
-          "destinations": ["ruta-asignada.response", "error-solicitud-ruta.response"]
+          "descripcion": "Publica eventos RouteAssigned o RouteRequestError.",
+          "destinations": ["route-assigned", "route-request-error"]
         }
       }
     },
     "mapper": {
-      "SolicitarMapper": {
+      "RouteRequestMapper": {
         "tipo": "MapStruct @Component",
-        "descripcion": "Convierte entre DTOs de evento y objetos de dominio. Viene en infrastructure/mapper/.",
-        "conversaciones": ["SolicitudRutaRequeridaEvent → SolicitudRutaDominio", "Ruta → RutaAsignadaEvent", "Error → ErrorSolicitudRutaEvent"]
+        "descripcion": "Convierte entre DTOs de evento y objetos de dominio.",
+        "conversaciones": ["RouteRequestEvent → RouteRequest", "Route → RouteAssignedEvent", "Error → RouteRequestErrorEvent"]
       }
     },
     "dtos": {
-      "SolicitudRutaRequeridaEvent": {
+      "RouteRequestEvent": {
         "ubicacion": "infrastructure/messaging/dto/",
         "descripcion": "DTO de evento de entrada"
       },
-      "RutaAsignadaEvent": {
+      "RouteAssignedEvent": {
         "ubicacion": "infrastructure/messaging/dto/",
         "descripcion": "DTO de evento de salida"
       },
-      "ErrorSolicitudRutaEvent": {
+      "RouteRequestErrorEvent": {
         "ubicacion": "infrastructure/messaging/dto/",
         "descripcion": "DTO de evento de error"
       }
     },
     "config": {
-      "StreamConfig": {
-        "descripcion": "Configuración de Spring Cloud Stream para bindings de RabbitMQ.",
+      "MessagingConfig": {
+        "descripcion": "Configuración de mensajería asíncrona.",
         "perfil": ["dev", "test", "prod"]
       }
     }

@@ -184,9 +184,9 @@
         "descripcion": "Nuevo enum de dominio",
         "valores": ["DISPONIBLE", "NO_DISPONIBLE"]
       },
-      "EstadoVehiculo": {
+      "VehicleStatus": {
         "descripcion": "Reutilizado de gestion-flota",
-        "valores": ["DISPONIBLE", "EN_RUTA", "EN_MANTENIMIENTO", "FUERA_SERVICIO"]
+        "valores": ["DISPONIBLE", "EN_RUTA", "EN_MANTENIMIENTO", "FUERA_DE_SERVICIO"]
       }
     }
   },
@@ -200,9 +200,9 @@
         }
       },
       "out": {
-        "TransportistaServiceClient": {
-          "descripcion": "Adaptador HTTP que implementa TransportistaServicePort. Usa RestClient de Spring. Lee URL base desde logistica.transportista.service.url. Convierte respuestas HTTP en domain objects o excepciones de dominio — ningún detalle HTTP escapa de este adaptador.",
-          "dtoInterno": "TransportistaDisponibleClientDTO — solo visible dentro de TransportistaServiceClient"
+        "TransporterServiceClient": {
+          "descripcion": "Adaptador HTTP que implementa TransporterServicePort. Usa RestClient de Spring inyectado via @Qualifier('transporterRestClient'), configurado con timeout 3s en TransporterRestClientConfig. RetryTemplate con backoff exponencial (3 intentos, 500ms inicial, 2x) configurado en TransporterRetryConfig.",
+          "dtoInterno": "TransporterAvailableClientDTO — solo visible dentro de TransporterServiceClient"
         },
         "VehiculoRepositoryAdapter": {
           "descripcion": "Reutilizado de gestion-flota — sin modificaciones."
