@@ -19,7 +19,4 @@ public class RegisterVehicleRequest {
     @Positive(message = "Load capacity must be greater than 0")
     private Double loadCapacity;
 
-    @NotNull(message = "Transporter ID is required")
-    @Positive(message = "Transporter ID must be greater than 0")
-    private Long transporterId;
 }
