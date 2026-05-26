@@ -12,4 +12,5 @@ public interface StopSpringRepository extends JpaRepository<StopJpaEntity, Long>
     java.util.Optional<StopJpaEntity> findByStopIdAndRouteId(Long stopId, Long routeId);
 
     java.util.Optional<StopJpaEntity> findByOrderId(Long orderId);
+    boolean existsByOrderId(Long orderId);
 }

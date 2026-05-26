@@ -5,6 +5,7 @@ import co.edu.unimagdalena.storelogistic.domain.fleet.models.Vehicle;
 import co.edu.unimagdalena.storelogistic.domain.fleet.ports.in.ChangeVehicleStatusUseCase;
 import co.edu.unimagdalena.storelogistic.domain.fleet.ports.out.VehicleRepository;
 import co.edu.unimagdalena.storelogistic.domain.fleet.values.VehicleStatus;
+import co.edu.unimagdalena.storelogistic.domain.route.ports.in.AssignVehicleToPendingRoutesUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ChangeVehicleStatusService implements ChangeVehicleStatusUseCase {
     private final VehicleRepository vehicleRepository;
+    private final AssignVehicleToPendingRoutesUseCase assignVehicleToPendingRoutesUseCase;
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
@@ -31,6 +33,13 @@ public class ChangeVehicleStatusService implements ChangeVehicleStatusUseCase {
 
         log.info("Vehicle {} status changed successfully from {} to {}",
                 vehicleId, previousStatus, newStatus);
+
+        if (newStatus == VehicleStatus.DISPONIBLE) {
+            assignVehicleToPendingRoutesUseCase.assignPending(
+                    vehicle.getVehicleId(),
+                    vehicle.getLoadCapacity().getWeightKg());
+        }
+
         return updated;
     }
 }
