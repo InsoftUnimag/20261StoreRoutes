@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
+import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
+@EnableRetry
 @Configuration
 public class TransporterRetryConfig {
 
