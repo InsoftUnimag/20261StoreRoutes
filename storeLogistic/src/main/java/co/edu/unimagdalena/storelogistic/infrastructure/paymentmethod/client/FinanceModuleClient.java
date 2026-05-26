@@ -7,11 +7,11 @@ import co.edu.unimagdalena.storelogistic.domain.paymentmethod.models.OrderPaymen
 import co.edu.unimagdalena.storelogistic.domain.paymentmethod.ports.out.FinanceGatewayPort;
 import co.edu.unimagdalena.storelogistic.infrastructure.paymentmethod.mapper.PaymentMethodMapper;
 import co.edu.unimagdalena.storelogistic.infrastructure.paymentmethod.web.dto.FinancePaymentMethodResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 
@@ -24,12 +24,21 @@ import java.util.function.Supplier;
  * Real HTTP adapter — wire this as @Component and remove MockFinanceModuleClient when the Finance Module is available.
  */
 @Slf4j
-@RequiredArgsConstructor
+@Component
 public class FinanceModuleClient implements FinanceGatewayPort {
 
     private final @Qualifier("financeWebClient") WebClient webClient;
     private final @Qualifier("financeRetryTemplate") RetryTemplate retryTemplate;
     private final PaymentMethodMapper mapper;
+
+    public FinanceModuleClient(
+            @Qualifier("financeWebClient") WebClient webClient,
+            @Qualifier("financeRetryTemplate") RetryTemplate retryTemplate,
+            PaymentMethodMapper mapper) {
+        this.webClient = webClient;
+        this.retryTemplate = retryTemplate;
+        this.mapper = mapper;
+    }
 
     private static final Map<HttpStatus, Supplier<RuntimeException>> CLIENT_ERROR_MAP = Map.of(
             HttpStatus.NOT_FOUND,
@@ -70,7 +79,7 @@ public class FinanceModuleClient implements FinanceGatewayPort {
     private OrderPaymentMethod callFinanceModule(Long orderId) {
         try {
             FinancePaymentMethodResponse dto = webClient.get()
-                    .uri("/pedidos/{id}/forma-pago", orderId)
+                    .uri("/api/v1/pedidos/{id}/pago-transporte", orderId)
                     .retrieve()
                     .onStatus(
                             status -> status.is4xxClientError(),
