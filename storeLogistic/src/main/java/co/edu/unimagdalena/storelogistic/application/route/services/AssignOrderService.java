@@ -1,5 +1,7 @@
 package co.edu.unimagdalena.storelogistic.application.route.services;
 
+import co.edu.unimagdalena.storelogistic.domain.fleet.ports.in.ChangeVehicleStatusUseCase;
+import co.edu.unimagdalena.storelogistic.domain.fleet.values.VehicleStatus;
 import co.edu.unimagdalena.storelogistic.domain.route.exceptions.OrderNotFoundException;
 import co.edu.unimagdalena.storelogistic.domain.route.models.Order;
 import co.edu.unimagdalena.storelogistic.domain.route.models.Route;
@@ -28,6 +30,7 @@ public class AssignOrderService implements AssignOrderUseCase {
     private final RouteRepository routeRepository;
     private final StopRepository stopRepository;
     private final SelectVehicleService selectVehicleService;
+    private final ChangeVehicleStatusUseCase changeVehicleStatusUseCase;
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
@@ -52,6 +55,7 @@ public class AssignOrderService implements AssignOrderUseCase {
             if (route.isFull()) {
                 log.info("Route id={} reached {}% occupancy — closing", route.routeId(), route.occupancyPercentage());
                 route.close();
+                changeVehicleStatusUseCase.change(route.vehicleId(), VehicleStatus.EN_RUTA);
                 routeRepository.save(route);
             } else if (route.occupancyPercentage().doubleValue() >= 90) {
                 log.warn("Route id={} at {}% occupancy — approaching closure threshold",
@@ -86,6 +90,7 @@ public class AssignOrderService implements AssignOrderUseCase {
             if (newRoute.isFull()) {
                 log.info("New route id={} immediately reached {}% — closing", newRoute.routeId(), newRoute.occupancyPercentage());
                 newRoute.close();
+                changeVehicleStatusUseCase.change(newRoute.vehicleId(), VehicleStatus.EN_RUTA);
                 routeRepository.save(newRoute);
             }
 
