@@ -5,7 +5,6 @@ import co.edu.unimagdalena.storelogistic.domain.fleet.exceptions.LogisticsExcept
 import co.edu.unimagdalena.storelogistic.domain.fleet.exceptions.TransporterNotAvailableException;
 import co.edu.unimagdalena.storelogistic.domain.fleet.ports.out.TransporterServicePort;
 import co.edu.unimagdalena.storelogistic.infrastructure.fleet.web.dto.TransporterAvailableClientDTO;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -17,11 +16,17 @@ import java.util.Optional;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class TransporterServiceClient implements TransporterServicePort {
 
     private final @Qualifier("transporterRestClient") RestClient restClient;
     private final @Qualifier("transporterRetryTemplate") RetryTemplate retryTemplate;
+
+    public TransporterServiceClient(
+            @Qualifier("transporterRestClient") RestClient restClient,
+            @Qualifier("transporterRetryTemplate") RetryTemplate retryTemplate) {
+        this.restClient = restClient;
+        this.retryTemplate = retryTemplate;
+    }
 
     @Override
     public Long getAvailable() {
