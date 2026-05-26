@@ -79,8 +79,7 @@ public class FleetController {
 
         var vehicle = registerUseCase.register(
                 CategoryType.valueOf(request.getCategory()),
-                new LoadCapacity(BigDecimal.valueOf(request.getLoadCapacity())),
-                request.getTransporterId());
+                new LoadCapacity(BigDecimal.valueOf(request.getLoadCapacity())));
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(mapper.toRegisterVehicleResponse(vehicle));
