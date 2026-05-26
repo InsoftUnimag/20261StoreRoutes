@@ -23,21 +23,23 @@ public class AssignVehicleToPendingRoutesService implements AssignVehicleToPendi
     public void assignPending(Long vehicleId, BigDecimal capacityKg) {
         var pending = routeRepository.findByStatus(RouteStatus.PENDING_VEHICLE);
 
-        if (pending.isEmpty()) {
-            log.debug("No PENDING_VEHICLE routes found for vehicle id={}", vehicleId);
-            return;
+        for (var route : pending) {
+            if (route.accumulatedWeightKg().compareTo(capacityKg) <= 0) {
+                var capacity = RouteCapacity.of(capacityKg);
+
+                log.info("Assigning vehicle id={} (capacity={} kg) to pending route id={} (weight={} kg)",
+                        vehicleId, capacityKg, route.routeId(), route.accumulatedWeightKg());
+
+                route.assignVehicle(vehicleId, capacity);
+                routeRepository.save(route);
+
+                log.info("Route id={} updated from PENDING_VEHICLE to AVAILABLE with vehicle id={}",
+                        route.routeId(), vehicleId);
+                return;
+            }
         }
 
-        var route = pending.get(0);
-        var capacity = RouteCapacity.of(capacityKg);
-
-        log.info("Assigning vehicle id={} (capacity={} kg) to pending route id={}",
-                vehicleId, capacityKg, route.routeId());
-
-        route.assignVehicle(vehicleId, capacity);
-        routeRepository.save(route);
-
-        log.info("Route id={} updated from PENDING_VEHICLE to AVAILABLE with vehicle id={}",
-                route.routeId(), vehicleId);
+        log.info("No PENDING_VEHICLE route with accumulated weight <= {} kg found for vehicle id={}",
+                capacityKg, vehicleId);
     }
 }
