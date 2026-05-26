@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 public class OrderJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_order")
     private Long orderId;
 

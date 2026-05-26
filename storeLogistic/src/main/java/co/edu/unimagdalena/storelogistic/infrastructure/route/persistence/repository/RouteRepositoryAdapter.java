@@ -3,6 +3,7 @@ package co.edu.unimagdalena.storelogistic.infrastructure.route.persistence.repos
 import co.edu.unimagdalena.storelogistic.domain.route.models.Route;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.out.RouteRepository;
 import co.edu.unimagdalena.storelogistic.domain.route.values.LogisticWeight;
+import co.edu.unimagdalena.storelogistic.domain.route.values.RouteStatus;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.mapper.RouteAssignmentMapper;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.persistence.jpa.RouteJpaEntity;
 import co.edu.unimagdalena.storelogistic.infrastructure.route.persistence.jparepository.RouteSpringRepository;
@@ -23,6 +24,12 @@ public class RouteRepositoryAdapter implements RouteRepository {
     public Optional<Route> findAvailableWithCapacity(LogisticWeight weight) {
         return springRepository.findBestAvailableWithCapacity(weight.valueKg())
                 .map(mapper::toRoute);
+    }
+
+    @Override
+    public List<Route> findByStatus(RouteStatus status) {
+        return springRepository.findByStatus(status.name())
+                .stream().map(mapper::toRoute).toList();
     }
 
     @Override

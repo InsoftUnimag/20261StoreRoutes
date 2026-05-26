@@ -82,6 +82,14 @@ public class Route {
         this.status = RouteStatus.AVAILABLE;
     }
 
+    public void assignVehicle(Long vehicleId, RouteCapacity capacity) {
+        if (status != RouteStatus.PENDING_VEHICLE)
+            throw new InvalidStateTransitionException(status.invalidTransitionMessage(RouteStatus.AVAILABLE));
+        this.vehicleId = vehicleId;
+        this.totalCapacity = capacity;
+        this.status = RouteStatus.AVAILABLE;
+    }
+
     public Stop assignOrder(Order order) {
         if (!canAcceptWeight(order.logisticWeight())) {
             throw new CapacityExceededException(

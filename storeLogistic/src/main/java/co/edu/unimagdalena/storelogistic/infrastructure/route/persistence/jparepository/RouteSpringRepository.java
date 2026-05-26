@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 public interface RouteSpringRepository extends JpaRepository<RouteJpaEntity, Long> {
@@ -27,4 +28,7 @@ public interface RouteSpringRepository extends JpaRepository<RouteJpaEntity, Lon
             """, nativeQuery = true)
     Optional<RouteJpaEntity> findByRouteIdAndCarrierId(@Param("routeId") Long routeId,
                                                        @Param("carrierId") Long carrierId);
+
+    @Query("SELECT r FROM RouteJpaEntity r WHERE r.status = :status ORDER BY r.routeId ASC")
+    List<RouteJpaEntity> findByStatus(@Param("status") String status);
 }
