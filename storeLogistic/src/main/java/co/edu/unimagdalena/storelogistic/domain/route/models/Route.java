@@ -76,6 +76,12 @@ public class Route {
         this.status = RouteStatus.CLOSED;
     }
 
+    public void markCompleted() {
+        if (!status.isValidTransition(RouteStatus.COMPLETED))
+            throw new InvalidStateTransitionException(status.invalidTransitionMessage(RouteStatus.COMPLETED));
+        this.status = RouteStatus.COMPLETED;
+    }
+
     public void activate() {
         if (!status.isValidTransition(RouteStatus.AVAILABLE))
             throw new InvalidStateTransitionException(status.invalidTransitionMessage(RouteStatus.AVAILABLE));
