@@ -34,6 +34,8 @@ public class RequestTransporterService implements RequestTransporterUseCase {
         vehicle.assignTransporter(transporterId);
         var saved = vehicleRepository.save(vehicle);
 
+        transporterServicePort.updateStatus(transporterId, "OCUPADO");
+
         log.info("Transporter {} assigned successfully to vehicle {}", transporterId, vehicleId);
         return saved;
     }

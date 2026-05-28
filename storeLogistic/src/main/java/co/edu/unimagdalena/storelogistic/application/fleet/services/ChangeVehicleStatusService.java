@@ -3,6 +3,7 @@ package co.edu.unimagdalena.storelogistic.application.fleet.services;
 import co.edu.unimagdalena.storelogistic.domain.fleet.exceptions.VehicleNotFoundException;
 import co.edu.unimagdalena.storelogistic.domain.fleet.models.Vehicle;
 import co.edu.unimagdalena.storelogistic.domain.fleet.ports.in.ChangeVehicleStatusUseCase;
+import co.edu.unimagdalena.storelogistic.domain.fleet.ports.out.TransporterServicePort;
 import co.edu.unimagdalena.storelogistic.domain.fleet.ports.out.VehicleRepository;
 import co.edu.unimagdalena.storelogistic.domain.fleet.values.VehicleStatus;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.in.AssignVehicleToPendingRoutesUseCase;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ChangeVehicleStatusService implements ChangeVehicleStatusUseCase {
     private final VehicleRepository vehicleRepository;
+    private final TransporterServicePort transporterServicePort;
     private final AssignVehicleToPendingRoutesUseCase assignVehicleToPendingRoutesUseCase;
 
     @Override
@@ -33,6 +35,14 @@ public class ChangeVehicleStatusService implements ChangeVehicleStatusUseCase {
 
         log.info("Vehicle {} status changed successfully from {} to {}",
                 vehicleId, previousStatus, newStatus);
+
+        if (vehicle.getTransporterId() != null) {
+            if (newStatus == VehicleStatus.DISPONIBLE) {
+                transporterServicePort.updateStatus(vehicle.getTransporterId(), "DISPONIBLE");
+            } else if (newStatus == VehicleStatus.EN_RUTA) {
+                transporterServicePort.updateStatus(vehicle.getTransporterId(), "OCUPADO");
+            }
+        }
 
         if (newStatus == VehicleStatus.DISPONIBLE) {
             assignVehicleToPendingRoutesUseCase.assignPending(

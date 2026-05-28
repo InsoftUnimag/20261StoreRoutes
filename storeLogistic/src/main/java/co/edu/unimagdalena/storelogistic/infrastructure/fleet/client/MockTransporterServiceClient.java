@@ -30,4 +30,9 @@ public class MockTransporterServiceClient implements TransporterServicePort {
             throw new InvalidTransporterException(transporterId);
         }
     }
+
+    @Override
+    public void updateStatus(Long transporterId, String estado) {
+        log.info("[MOCK] Updating transporter {} status to {}", transporterId, estado);
+    }
 }
