@@ -22,7 +22,6 @@ class VehicleTransporterMapperTest {
                 .transporterId(1L)
                 .loadCapacity(new LoadCapacity(BigDecimal.valueOf(1500)))
                 .status(VehicleStatus.DISPONIBLE)
-                .currentWeight(BigDecimal.ZERO)
                 .build();
 
         var response = mapper.toResponse(vehicle);
@@ -38,7 +37,6 @@ class VehicleTransporterMapperTest {
                 .transporterId(99L)
                 .loadCapacity(new LoadCapacity(BigDecimal.valueOf(5000)))
                 .status(VehicleStatus.EN_MANTENIMIENTO)
-                .currentWeight(BigDecimal.ZERO)
                 .build();
 
         var response = mapper.toResponse(vehicle);

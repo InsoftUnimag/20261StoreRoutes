@@ -43,7 +43,6 @@ class RequestTransporterServiceTest {
                 .loadCapacity(new LoadCapacity(BigDecimal.valueOf(1500)))
                 .status(VehicleStatus.DISPONIBLE)
                 .transporterId(0L)
-                .currentWeight(BigDecimal.ZERO)
                 .build();
     }
 

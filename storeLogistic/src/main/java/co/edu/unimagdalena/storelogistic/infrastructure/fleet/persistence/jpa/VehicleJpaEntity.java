@@ -35,9 +35,6 @@ public class VehicleJpaEntity {
     @Column(name = "id_transportista", nullable = false)
     private Long transporterId;
 
-    @Column(name = "peso_actual")
-    private BigDecimal currentWeight;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

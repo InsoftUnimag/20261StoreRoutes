@@ -40,7 +40,6 @@ class RequestTransporterControllerTest {
                 .transporterId(transporterId)
                 .loadCapacity(new LoadCapacity(BigDecimal.valueOf(1500)))
                 .status(VehicleStatus.DISPONIBLE)
-                .currentWeight(BigDecimal.ZERO)
                 .build();
     }
 

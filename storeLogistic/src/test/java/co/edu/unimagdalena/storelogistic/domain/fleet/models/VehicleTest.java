@@ -31,39 +31,8 @@ class VehicleTest {
 
         assertNotNull(vehicle);
         assertEquals(VehicleStatus.EN_MANTENIMIENTO, vehicle.getStatus());
-        assertEquals(BigDecimal.ZERO, vehicle.getCurrentWeight());
         assertNotNull(vehicle.getCreatedAt());
         assertEquals(transporterId, vehicle.getTransporterId());
-    }
-
-    @Test
-    void occupancyPercentage_returnsCorrectValue() {
-        var vehicle = Vehicle.builder()
-                .loadCapacity(new LoadCapacity(BigDecimal.valueOf(1000)))
-                .currentWeight(BigDecimal.valueOf(500))
-                .build();
-
-        assertEquals(new BigDecimal("50.00"), vehicle.occupancyPercentage());
-    }
-
-    @Test
-    void occupancyPercentage_returnsZero_whenEmpty() {
-        var vehicle = Vehicle.builder()
-                .loadCapacity(new LoadCapacity(BigDecimal.valueOf(1000)))
-                .currentWeight(BigDecimal.ZERO)
-                .build();
-
-        assertEquals(new BigDecimal("0.00"), vehicle.occupancyPercentage());
-    }
-
-    @Test
-    void occupancyPercentage_returnsHundred_whenFull() {
-        var vehicle = Vehicle.builder()
-                .loadCapacity(new LoadCapacity(BigDecimal.valueOf(1000)))
-                .currentWeight(BigDecimal.valueOf(1000))
-                .build();
-
-        assertEquals(new BigDecimal("100.00"), vehicle.occupancyPercentage());
     }
 
     @Test

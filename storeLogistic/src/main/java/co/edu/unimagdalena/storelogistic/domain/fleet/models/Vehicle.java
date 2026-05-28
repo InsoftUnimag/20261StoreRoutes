@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -23,18 +22,8 @@ public class Vehicle {
     private LoadCapacity loadCapacity;
     private VehicleStatus status;
     private Long transporterId;
-    private BigDecimal currentWeight;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    public BigDecimal occupancyPercentage() {
-        return Optional.ofNullable(loadCapacity)
-                .filter(c -> c.getWeightKg().compareTo(BigDecimal.ZERO) != 0)
-                .map(c -> Optional.ofNullable(currentWeight).orElse(BigDecimal.ZERO)
-                        .divide(c.getWeightKg(), 2, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(100)))
-                .orElse(BigDecimal.ZERO);
-    }
 
     public static Vehicle createNew(Category category, LoadCapacity loadCapacity, Long transporterId) {
         return Vehicle.builder()
@@ -42,7 +31,6 @@ public class Vehicle {
                 .loadCapacity(loadCapacity)
                 .status(VehicleStatus.EN_MANTENIMIENTO)
                 .transporterId(transporterId)
-                .currentWeight(BigDecimal.ZERO)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
