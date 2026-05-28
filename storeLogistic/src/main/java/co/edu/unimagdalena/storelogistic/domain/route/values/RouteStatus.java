@@ -3,6 +3,7 @@ package co.edu.unimagdalena.storelogistic.domain.route.values;
 public enum RouteStatus {
     AVAILABLE,
     CLOSED,
+    COMPLETED,
     PENDING_VEHICLE;
 
     public boolean isValidTransition(RouteStatus target) {
@@ -10,7 +11,8 @@ public enum RouteStatus {
         return switch (this) {
             case AVAILABLE       -> target == CLOSED;
             case PENDING_VEHICLE -> target == AVAILABLE;
-            case CLOSED          -> false;
+            case CLOSED          -> target == COMPLETED;
+            case COMPLETED       -> false;
         };
     }
 

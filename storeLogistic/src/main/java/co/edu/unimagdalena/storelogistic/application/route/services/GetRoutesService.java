@@ -3,6 +3,7 @@ package co.edu.unimagdalena.storelogistic.application.route.services;
 import co.edu.unimagdalena.storelogistic.domain.route.models.Route;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.in.GetRoutesUseCase;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.out.RouteRepository;
+import co.edu.unimagdalena.storelogistic.domain.route.values.RouteStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,8 @@ public class GetRoutesService implements GetRoutesUseCase {
 
     @Override
     public List<Route> getAll() {
-        return routeRepository.findAll();
+        return routeRepository.findAll().stream()
+                .filter(r -> r.status() != RouteStatus.COMPLETED)
+                .toList();
     }
 }
