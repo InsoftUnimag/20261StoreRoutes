@@ -17,7 +17,5 @@ public interface RouteRepository {
 
     Optional<Route> findById(Long routeId);
 
-    Optional<Route> findByIdAndCarrierId(Long routeId, Long carrierId);
-
     List<Route> findAll();
 }

@@ -27,7 +27,7 @@ public class UpdateStopStatusService implements UpdateStopStatusUseCase {
         log.info("Updating stop status: routeId={}, stopId={}, carrierId={}, resultado={}",
                 cmd.routeId(), cmd.stopId(), cmd.carrierId(), cmd.resultado());
 
-        authorizationService.verifyCarrierHasAccess(cmd.routeId(), cmd.carrierId());
+        authorizationService.verifyRouteAccess(cmd.routeId());
 
         Stop stop = stopRepository.findByIdAndRouteId(cmd.stopId(), cmd.routeId())
                 .orElseThrow(() -> new StopNotFoundException(cmd.stopId()));
