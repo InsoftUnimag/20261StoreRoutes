@@ -17,7 +17,5 @@ public class VehicleDTO {
     private String category;
     private BigDecimal loadCapacity;
     private String status;
-    private BigDecimal currentWeight;
-    private BigDecimal occupancyPercentage;
     private LocalDateTime createdAt;
 }

@@ -32,13 +32,11 @@ public abstract class VehicleMapper {
     @Mapping(target = "category", expression = "java(resolveCategory(vehicle.getCategoryId()))")
     @Mapping(target = "loadCapacity", expression = "java(Optional.ofNullable(vehicle.getLoadCapacity()).map(LoadCapacity::getWeightKg).orElse(null))")
     @Mapping(target = "status", expression = "java(Optional.ofNullable(vehicle.getStatus()).map(VehicleStatus::toString).orElse(null))")
-    @Mapping(target = "occupancyPercentage", expression = "java(vehicle.occupancyPercentage())")
     public abstract VehicleDTO toVehicleDTO(Vehicle vehicle);
 
     @Mapping(target = "category", expression = "java(resolveCategory(vehicle.getCategoryId()))")
     @Mapping(target = "loadCapacity", expression = "java(Optional.ofNullable(vehicle.getLoadCapacity()).map(LoadCapacity::getWeightKg).orElse(null))")
     @Mapping(target = "status", expression = "java(Optional.ofNullable(vehicle.getStatus()).map(VehicleStatus::toString).orElse(null))")
-    @Mapping(target = "occupancyPercentage", expression = "java(vehicle.occupancyPercentage())")
     public abstract VehicleDetailResponse toVehicleDetailResponse(Vehicle vehicle);
 
     @Mapping(target = "status", expression = "java(Optional.ofNullable(vehicle.getStatus()).map(VehicleStatus::toString).orElse(null))")

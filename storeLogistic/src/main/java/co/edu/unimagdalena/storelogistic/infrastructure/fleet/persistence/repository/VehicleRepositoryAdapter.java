@@ -30,7 +30,6 @@ public class VehicleRepositoryAdapter implements VehicleRepository {
                 .loadCapacity(vehicle.getLoadCapacity().getWeightKg())
                 .status(vehicle.getStatus().toString())
                 .transporterId(vehicle.getTransporterId())
-                .currentWeight(vehicle.getCurrentWeight())
                 .createdAt(vehicle.getCreatedAt())
                 .updatedAt(vehicle.getUpdatedAt())
                 .build();
@@ -72,7 +71,6 @@ public class VehicleRepositoryAdapter implements VehicleRepository {
                 .loadCapacity(new LoadCapacity(entity.getLoadCapacity()))
                 .status(VehicleStatus.valueOf(entity.getStatus()))
                 .transporterId(entity.getTransporterId())
-                .currentWeight(entity.getCurrentWeight())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
