@@ -22,7 +22,7 @@ public class GetStopDetailService implements GetStopDetailUseCase {
     public Stop get(Long routeId, Long stopId, Long carrierId) {
         log.info("Stop detail requested: routeId={}, stopId={}, carrierId={}", routeId, stopId, carrierId);
         try {
-            authorizationService.verifyRouteAccess(routeId);
+            authorizationService.verifyRouteReadAccess(routeId);
             Stop stop = stopRepository.findByIdAndRouteId(stopId, routeId)
                     .orElseThrow(AccessDeniedException::new);
             log.info("Stop detail found: stopId={}, orderId={}", stop.stopId(), stop.orderId());

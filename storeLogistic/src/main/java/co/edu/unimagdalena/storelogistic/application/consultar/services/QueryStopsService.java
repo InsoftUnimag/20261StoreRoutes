@@ -25,7 +25,7 @@ public class QueryStopsService implements QueryStopsUseCase {
         log.info("Consulting stops: routeId={}, carrierId={}", routeId, carrierId);
         long start = System.currentTimeMillis();
         try {
-            authorizationService.verifyRouteAccess(routeId);
+            authorizationService.verifyRouteReadAccess(routeId);
             List<Stop> stops = stopRepository.findByRouteIdOrderBySequence(routeId);
             log.info("Stops query successful: routeId={}, carrierId={}, count={}, elapsed={}ms",
                     routeId, carrierId, stops.size(), System.currentTimeMillis() - start);
