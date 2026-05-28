@@ -33,6 +33,8 @@ public class RegisterVehicleService implements RegisterVehicleUseCase {
         var vehicle = Vehicle.createNew(cat, loadCapacity, transporterId);
         var saved = vehicleRepository.save(vehicle);
 
+        transporterServicePort.updateStatus(transporterId, "OCUPADO");
+
         log.info("Vehicle registered successfully with ID: {}", saved.getVehicleId());
         return saved;
     }

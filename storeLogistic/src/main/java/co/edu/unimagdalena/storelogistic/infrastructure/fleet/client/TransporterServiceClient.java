@@ -92,6 +92,33 @@ public class TransporterServiceClient implements TransporterServicePort {
                 .toBodilessEntity();
     }
 
+    @Override
+    public void updateStatus(Long transporterId, String estado) {
+        log.info("Updating transporter status: id={}, estado={}", transporterId, estado);
+        retryTemplate.execute(
+                context -> {
+                    logAttempt(context.getRetryCount());
+                    doUpdateStatus(transporterId, estado);
+                    return null;
+                },
+                context -> {
+                    log.error("Transporter module unavailable after {} attempts for status update", context.getRetryCount());
+                    throw new LogisticsException("El módulo de Transportista no está disponible. Intente nuevamente más tarde.");
+                }
+        );
+    }
+
+    private void doUpdateStatus(Long transporterId, String estado) {
+        restClient.patch()
+                .uri("/transportistas/{id}/estado?estado={estado}", transporterId, estado)
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), (request, response) -> {
+                    throw new LogisticsException(
+                            "Error al actualizar estado del transportista " + transporterId + ": " + response.getStatusText());
+                })
+                .toBodilessEntity();
+    }
+
     private void logAttempt(int retryCount) {
         if (retryCount > 0) {
             log.warn("Retry attempt {}/3 for transporter module call", retryCount);
