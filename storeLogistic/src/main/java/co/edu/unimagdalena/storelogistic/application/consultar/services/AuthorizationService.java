@@ -13,8 +13,8 @@ public class AuthorizationService {
 
     private final RouteRepository routeRepository;
 
-    public Route verifyCarrierHasAccess(Long routeId, Long carrierId) {
-        Route route = routeRepository.findByIdAndCarrierId(routeId, carrierId)
+    public Route verifyRouteAccess(Long routeId) {
+        Route route = routeRepository.findById(routeId)
                 .orElseThrow(AccessDeniedException::new);
         if (route.status() != RouteStatus.CLOSED)
             throw new AccessDeniedException();
