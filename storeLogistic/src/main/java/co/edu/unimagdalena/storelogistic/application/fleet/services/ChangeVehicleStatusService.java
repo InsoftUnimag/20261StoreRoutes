@@ -37,9 +37,9 @@ public class ChangeVehicleStatusService implements ChangeVehicleStatusUseCase {
                 vehicleId, previousStatus, newStatus);
 
         if (vehicle.getTransporterId() != null) {
-            if (newStatus == VehicleStatus.DISPONIBLE) {
+            if (newStatus == VehicleStatus.DISPONIBLE && previousStatus == VehicleStatus.EN_RUTA) {
                 transporterServicePort.updateStatus(vehicle.getTransporterId(), "DISPONIBLE");
-            } else if (newStatus == VehicleStatus.EN_RUTA) {
+            } else if (newStatus == VehicleStatus.EN_RUTA && previousStatus == VehicleStatus.DISPONIBLE) {
                 transporterServicePort.updateStatus(vehicle.getTransporterId(), "OCUPADO");
             }
         }
