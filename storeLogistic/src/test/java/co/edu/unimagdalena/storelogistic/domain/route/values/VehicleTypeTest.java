@@ -19,7 +19,7 @@ class VehicleTypeTest {
         "1501,  SINGLE_TRUCK",
         "5000,  SINGLE_TRUCK",
         "5001,  REGIONAL_SEMI",
-        "25000, REGIONAL_SEMI"
+        "30000, REGIONAL_SEMI"
     })
     void forWeight_returnsCorrectType(double weightKg, VehicleType expected) {
         LogisticWeight weight = LogisticWeight.of(weightKg);
@@ -27,12 +27,12 @@ class VehicleTypeTest {
     }
 
     @Test
-    @DisplayName("Weight > 25 000 kg throws CapacityExceededException")
+    @DisplayName("Weight > 30 000 kg throws CapacityExceededException")
     void forWeight_exceedsMaxCapacity_throwsException() {
-        LogisticWeight heavyWeight = LogisticWeight.of(25_001);
+        LogisticWeight heavyWeight = LogisticWeight.of(30_001);
         assertThatThrownBy(() -> VehicleType.forWeight(heavyWeight))
                 .isInstanceOf(CapacityExceededException.class)
-                .hasMessageContaining("25001");
+                .hasMessageContaining("30001");
     }
 
     @Test

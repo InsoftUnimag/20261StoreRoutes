@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 public enum VehicleType {
     URBAN_VAN   (BigDecimal.valueOf(1_500),  "CAMIONETA_URBANA"),
     SINGLE_TRUCK(BigDecimal.valueOf(5_000),  "CAMION_SENCILLO"),
-    REGIONAL_SEMI(BigDecimal.valueOf(25_000), "TRACTOCAMION_REGIONAL");
+    REGIONAL_SEMI(BigDecimal.valueOf(30_000), "TRACTOCAMION_REGIONAL");
 
     private final BigDecimal maxCapacityKg;
     private final String categoryName;
