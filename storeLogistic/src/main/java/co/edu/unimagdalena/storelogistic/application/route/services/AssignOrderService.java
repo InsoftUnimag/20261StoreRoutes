@@ -12,6 +12,8 @@ import co.edu.unimagdalena.storelogistic.domain.route.ports.out.OrderRepository;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.out.RouteRepository;
 import co.edu.unimagdalena.storelogistic.domain.route.ports.out.StopRepository;
 import co.edu.unimagdalena.storelogistic.domain.route.values.RouteCapacity;
+import co.edu.unimagdalena.storelogistic.infrastructure.route.messaging.dto.RouteDispatchedEvent;
+import co.edu.unimagdalena.storelogistic.infrastructure.route.messaging.publisher.RouteEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Slf4j
@@ -31,6 +34,7 @@ public class AssignOrderService implements AssignOrderUseCase {
     private final StopRepository stopRepository;
     private final SelectVehicleService selectVehicleService;
     private final ChangeVehicleStatusUseCase changeVehicleStatusUseCase;
+    private final RouteEventPublisher routeEventPublisher;
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
@@ -57,6 +61,11 @@ public class AssignOrderService implements AssignOrderUseCase {
                 route.close();
                 changeVehicleStatusUseCase.change(route.vehicleId(), VehicleStatus.EN_RUTA);
                 routeRepository.save(route);
+                routeEventPublisher.publishRouteDispatched(
+                        RouteDispatchedEvent.builder()
+                                .routeId(route.routeId())
+                                .dispatchedAt(LocalDateTime.now())
+                                .build());
             } else if (route.occupancyPercentage().doubleValue() >= 90) {
                 log.warn("Route id={} at {}% occupancy — approaching closure threshold",
                         route.routeId(), route.occupancyPercentage());
@@ -92,6 +101,11 @@ public class AssignOrderService implements AssignOrderUseCase {
                 newRoute.close();
                 changeVehicleStatusUseCase.change(newRoute.vehicleId(), VehicleStatus.EN_RUTA);
                 routeRepository.save(newRoute);
+                routeEventPublisher.publishRouteDispatched(
+                        RouteDispatchedEvent.builder()
+                                .routeId(newRoute.routeId())
+                                .dispatchedAt(LocalDateTime.now())
+                                .build());
             }
 
             log.info("Assigned orderId={} to new routeId={}", order.orderId(), newRoute.routeId());
