@@ -4,5 +4,5 @@ import co.edu.unimagdalena.storelogistic.domain.route.models.Stop;
 
 public interface GetStopDetailUseCase {
 
-    Stop get(Long routeId, Long stopId, Long carrierId);
+    Stop get(Long routeId, Long stopId);
 }

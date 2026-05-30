@@ -19,8 +19,8 @@ public class GetStopDetailService implements GetStopDetailUseCase {
     private final StopRepository stopRepository;
 
     @Override
-    public Stop get(Long routeId, Long stopId, Long carrierId) {
-        log.info("Stop detail requested: routeId={}, stopId={}, carrierId={}", routeId, stopId, carrierId);
+    public Stop get(Long routeId, Long stopId) {
+        log.info("Stop detail requested: routeId={}, stopId={}", routeId, stopId);
         try {
             authorizationService.verifyRouteReadAccess(routeId);
             Stop stop = stopRepository.findByIdAndRouteId(stopId, routeId)
@@ -28,7 +28,7 @@ public class GetStopDetailService implements GetStopDetailUseCase {
             log.info("Stop detail found: stopId={}, orderId={}", stop.stopId(), stop.orderId());
             return stop;
         } catch (AccessDeniedException e) {
-            log.warn("Access denied: carrierId={} attempted stop {} on route {}", carrierId, stopId, routeId);
+            log.warn("Access denied: routeId={}, stopId={}", routeId, stopId);
             throw e;
         }
     }

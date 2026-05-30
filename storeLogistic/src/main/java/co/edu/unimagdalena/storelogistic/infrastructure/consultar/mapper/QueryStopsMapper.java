@@ -37,8 +37,8 @@ public abstract class QueryStopsMapper {
         );
     }
 
-    public QueryStopsResponse toResponse(Long routeId, Long carrierId, List<Stop> stops) {
+    public QueryStopsResponse toResponse(Long routeId, List<Stop> stops) {
         List<StopSummaryDTO> dtos = stops.stream().map(this::toSummaryDTO).toList();
-        return new QueryStopsResponse(routeId, carrierId, dtos.size(), dtos);
+        return new QueryStopsResponse(routeId, dtos.size(), dtos);
     }
 }

@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface QueryStopsUseCase {
 
-    List<Stop> query(Long routeId, Long carrierId);
+    List<Stop> query(Long routeId);
 }

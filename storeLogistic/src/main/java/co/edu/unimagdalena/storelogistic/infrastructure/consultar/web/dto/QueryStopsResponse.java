@@ -11,7 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 public class QueryStopsResponse {
     private Long routeId;
-    private Long carrierId;
     private int totalStops;
     private List<StopSummaryDTO> stops;
 }

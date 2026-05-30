@@ -35,18 +35,16 @@ public class QueryStopsController {
 
     @GetMapping("/{routeId}/stops")
     public ResponseEntity<QueryStopsResponse> listStops(
-            @PathVariable @Positive Long routeId,
-            @RequestParam @Positive Long carrierId) {
-        List<Stop> stops = queryStopsUseCase.query(routeId, carrierId);
-        return ResponseEntity.ok(mapper.toResponse(routeId, carrierId, stops));
+            @PathVariable @Positive Long routeId) {
+        List<Stop> stops = queryStopsUseCase.query(routeId);
+        return ResponseEntity.ok(mapper.toResponse(routeId, stops));
     }
 
     @GetMapping("/{routeId}/stops/{stopId}")
     public ResponseEntity<StopDetailDTO> getStopDetail(
             @PathVariable @Positive Long routeId,
-            @PathVariable @Positive Long stopId,
-            @RequestParam @Positive Long carrierId) {
-        Stop stop = getStopDetailUseCase.get(routeId, stopId, carrierId);
+            @PathVariable @Positive Long stopId) {
+        Stop stop = getStopDetailUseCase.get(routeId, stopId);
         OrderPaymentMethod payment = consultPaymentMethodUseCase.consult(stop.orderId());
         return ResponseEntity.ok(mapper.toDetailDTO(stop, payment));
     }
@@ -55,12 +53,11 @@ public class QueryStopsController {
     public ResponseEntity<UpdateStopStatusResponse> updateStopStatus(
             @PathVariable @Positive Long routeId,
             @PathVariable @Positive Long stopId,
-            @RequestParam @Positive Long carrierId,
             @Valid @RequestBody UpdateStopStatusRequest request) {
 
         StopStatus resultado = StopStatus.valueOf(request.getResultado());
         UpdateStopStatusUseCase.Command command = new UpdateStopStatusUseCase.Command(
-                routeId, stopId, carrierId, resultado, request.getFechaEntrega());
+                routeId, stopId, resultado, request.getFechaEntrega());
 
         Stop stop = updateStopStatusUseCase.execute(command);
         return ResponseEntity.ok(toUpdateResponse(stop));

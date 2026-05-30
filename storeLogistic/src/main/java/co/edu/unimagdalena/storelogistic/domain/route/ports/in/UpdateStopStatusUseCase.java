@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 public interface UpdateStopStatusUseCase {
 
-    record Command(Long routeId, Long stopId, Long carrierId, StopStatus resultado, LocalDate fechaEntrega) {}
+    record Command(Long routeId, Long stopId, StopStatus resultado, LocalDate fechaEntrega) {}
 
     Stop execute(Command command);
 }

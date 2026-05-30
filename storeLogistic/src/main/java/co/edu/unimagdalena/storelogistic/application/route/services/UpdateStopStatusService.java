@@ -31,8 +31,8 @@ public class UpdateStopStatusService implements UpdateStopStatusUseCase {
     @Override
     @Transactional
     public Stop execute(Command cmd) {
-        log.info("Updating stop status: routeId={}, stopId={}, carrierId={}, resultado={}",
-                cmd.routeId(), cmd.stopId(), cmd.carrierId(), cmd.resultado());
+        log.info("Updating stop status: routeId={}, stopId={}, resultado={}",
+                cmd.routeId(), cmd.stopId(), cmd.resultado());
 
         authorizationService.verifyRouteWriteAccess(cmd.routeId());
 
