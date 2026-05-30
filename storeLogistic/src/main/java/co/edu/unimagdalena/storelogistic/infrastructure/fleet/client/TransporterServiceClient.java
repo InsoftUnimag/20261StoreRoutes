@@ -109,7 +109,7 @@ public class TransporterServiceClient implements TransporterServicePort {
     }
 
     private void doUpdateStatus(Long transporterId, String estado) {
-        restClient.patch()
+        restClient.put()
                 .uri("/transportistas/{id}/estado?estado={estado}", transporterId, estado)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), (request, response) -> {
