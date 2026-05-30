@@ -1,17 +1,18 @@
 package co.edu.unimagdalena.storelogistic.application.orderstatus.services;
 
-import co.edu.unimagdalena.storelogistic.domain.orderstatus.exceptions.CarrierNotFoundException;
+import co.edu.unimagdalena.storelogistic.domain.fleet.ports.out.VehicleRepository;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.exceptions.OrderNotFoundException;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.models.Alert;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.models.Order;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.models.OrderStatusAudit;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.ports.in.UpdateOrderStatusUseCase;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.ports.out.AlertRepository;
-import co.edu.unimagdalena.storelogistic.domain.orderstatus.ports.out.CarrierRepository;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.ports.out.OrderRepository;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.ports.out.OrderStatusAuditRepository;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.ports.out.OrderStatusEventPublisher;
 import co.edu.unimagdalena.storelogistic.domain.orderstatus.values.FinalStatus;
+import co.edu.unimagdalena.storelogistic.domain.route.ports.out.RouteRepository;
+import co.edu.unimagdalena.storelogistic.domain.route.ports.out.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,21 +26,21 @@ import java.time.LocalDateTime;
 public class UpdateOrderStatusService implements UpdateOrderStatusUseCase {
 
     private final OrderRepository orderRepository;
-    private final CarrierRepository carrierRepository;
+    private final StopRepository stopRepository;
+    private final RouteRepository routeRepository;
+    private final VehicleRepository vehicleRepository;
     private final AlertRepository alertRepository;
     private final OrderStatusAuditRepository auditRepository;
     private final OrderStatusEventPublisher eventPublisher;
 
     @Override
     @Transactional
-    public Order update(Long orderId, Long carrierId, FinalStatus status) {
-        log.info("Updating order status: orderId={}, carrierId={}, status={}", orderId, carrierId, status);
-
-        carrierRepository.findById(carrierId)
-                .orElseThrow(() -> new CarrierNotFoundException(carrierId));
-
+    public Order update(Long orderId, FinalStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        Long carrierId = resolveCarrierId(orderId);
+        log.info("Updating order status: orderId={}, carrierId={}, status={}", orderId, carrierId, status);
 
         FinalStatus previousStatus = order.finalStatus();
         order.updateStatus(status, carrierId);
@@ -69,5 +70,24 @@ public class UpdateOrderStatusService implements UpdateOrderStatusUseCase {
         }
 
         return order;
+    }
+
+    private Long resolveCarrierId(Long orderId) {
+        var stop = stopRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Order " + orderId + " is not assigned to any route stop"));
+
+        var route = routeRepository.findById(stop.routeId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Route " + stop.routeId() + " not found for order " + orderId));
+
+        var vehicle = vehicleRepository.findById(route.vehicleId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Vehicle " + route.vehicleId() + " not found for route " + route.routeId()));
+
+        log.info("Resolved carrierId={} for orderId={} (routeId={}, vehicleId={})",
+                vehicle.getTransporterId(), orderId, route.routeId(), route.vehicleId());
+
+        return vehicle.getTransporterId();
     }
 }

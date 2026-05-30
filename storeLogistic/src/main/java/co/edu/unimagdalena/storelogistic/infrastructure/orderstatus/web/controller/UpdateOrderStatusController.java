@@ -40,7 +40,7 @@ public class UpdateOrderStatusController {
             @Valid @RequestBody UpdateOrderStatusRequest request) {
 
         FinalStatus status = parseFinalStatus(request.getEstadoFinal());
-        Order order = updateOrderStatusUseCase.update(idPedido, request.getIdTransportista(), status);
+        Order order = updateOrderStatusUseCase.update(idPedido, status);
         return ResponseEntity.ok(mapper.toResponse(order));
     }
 
